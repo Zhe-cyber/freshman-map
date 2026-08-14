@@ -217,3 +217,12 @@ export const MOCK = {
       when:'今晚 21:00 tonight', hostName:'Sara', capacity:4, joined:4, joinedByMe:false }
   ]
 }
+
+// Confirmed on the walking survey: every toilet in these buildings provides
+// paper. Kept OUT of the generated I(...) list on purpose — that list gets
+// regenerated from photo filenames by tools/import-photos.js, which emits
+// null for paper and silently wiped these once already.
+const PAPER_PROVIDED = ['elec', 'duxin']
+MOCK.items.forEach(i => {
+  if (i.type === 'toilet' && PAPER_PROVIDED.includes(i.buildingId)) i.paper = true
+})
