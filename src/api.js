@@ -2,7 +2,7 @@
 // Empty API_BASE = mock mode. CLOUD sets it on Day 2, FRONT changes nothing.
 import { MOCK } from './data.js'
 
-const API_BASE = ''   // ← CLOUD: put the API Gateway URL here on Day 2
+const API_BASE = 'https://wfzwyfnffg.execute-api.us-east-1.amazonaws.com'
 const YOUBIKE_URL = 'https://apis.youbike.com.tw/json/station-yb2.json'
 
 // Multi-tenant backdoor: ?campus=ntu switches campus. 3 lines, whole demo.

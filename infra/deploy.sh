@@ -43,10 +43,29 @@ else
 fi
 
 echo "==> packaging lambda"
-BUILD=$(mktemp -d)
+# Build inside the repo, not /tmp: the AWS CLI on Windows is a native binary
+# and cannot read Git Bash paths like /tmp/tmp.XXXX. A relative path works
+# for both shells.
+BUILD=infra/.build
+rm -rf "$BUILD"; mkdir -p "$BUILD"
 cp infra/lambda/index.mjs "$BUILD/"
-( cd "$BUILD" && zip -q function.zip index.mjs )
-# @aws-sdk v3 is already present in the nodejs20.x runtime, so no npm install.
+# @aws-sdk v3 ships with the nodejs20.x runtime, so there is nothing to install.
+# Git Bash on Windows has no `zip`, and `tar -a` there writes a tar with a .zip
+# name that Lambda rejects — so fall back to PowerShell, then python.
+( cd "$BUILD"
+  if command -v zip >/dev/null 2>&1; then
+    zip -q function.zip index.mjs
+  elif command -v powershell >/dev/null 2>&1; then
+    powershell -NoProfile -Command \
+      "Compress-Archive -Path index.mjs -DestinationPath function.zip -Force" >/dev/null
+  elif command -v python >/dev/null 2>&1; then
+    python -c "import zipfile;zipfile.ZipFile('function.zip','w',zipfile.ZIP_DEFLATED).write('index.mjs')"
+  else
+    echo "No zip, powershell or python available to package the function." >&2
+    exit 1
+  fi
+  head -c2 function.zip | grep -q PK || { echo "Packaging produced a non-zip file." >&2; exit 1; }
+)
 
 echo "==> lambda"
 if aws lambda get-function --function-name "$FN" --region "$REGION" >/dev/null 2>&1; then
@@ -78,13 +97,13 @@ if [ "$API_ID" = "None" ] || [ -z "$API_ID" ]; then
     --name "$API" \
     --protocol-type HTTP \
     --target "arn:aws:lambda:${REGION}:${ACCOUNT}:function:${FN}" \
-    --cors-configuration 'AllowOrigins=*,AllowMethods=GET,AllowMethods=POST,AllowMethods=OPTIONS,AllowHeaders=content-type' \
+    --cors-configuration '{"AllowOrigins":["*"],"AllowMethods":["GET","POST","OPTIONS"],"AllowHeaders":["content-type"]}' \
     --region "$REGION" --query ApiId --output text)
   echo "    created $API_ID"
 else
   # keep CORS correct even if someone changed it in the console
   aws apigatewayv2 update-api --api-id "$API_ID" \
-    --cors-configuration 'AllowOrigins=*,AllowMethods=GET,AllowMethods=POST,AllowMethods=OPTIONS,AllowHeaders=content-type' \
+    --cors-configuration '{"AllowOrigins":["*"],"AllowMethods":["GET","POST","OPTIONS"],"AllowHeaders":["content-type"]}' \
     --region "$REGION" >/dev/null
   echo "    exists $API_ID"
 fi
@@ -103,13 +122,17 @@ URL="https://${API_ID}.execute-api.${REGION}.amazonaws.com"
 echo "==> smoke test"
 sleep 3
 CODE=$(curl -s -o /dev/null -w '%{http_code}' "$URL/health")
-CORS=$(curl -sI -H 'Origin: https://example.com' "$URL/health" | grep -ci 'access-control-allow-origin' || true)
+# A plain GET is not the test — browsers send an OPTIONS preflight first, and
+# that is what actually fails. Check the preflight.
+PREFLIGHT=$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$URL/c/cycu/buildings"   -H 'Origin: http://localhost:8099'   -H 'Access-Control-Request-Method: GET'   -H 'Access-Control-Request-Headers: content-type')
+CORS=$(curl -sI -X OPTIONS "$URL/c/cycu/buildings" -H 'Origin: http://localhost:8099'   -H 'Access-Control-Request-Method: GET' | grep -ci 'access-control-allow-origin' || true)
 
 echo
 echo "  API      $URL"
 echo "  /health  HTTP $CODE"
-echo "  CORS     $([ "$CORS" -gt 0 ] && echo 'header present ✓' || echo 'MISSING ✗ — fix before building anything else')"
+echo "  preflight OPTIONS HTTP $PREFLIGHT"
+echo "  CORS     $([ "$CORS" -gt 0 ] && [ "$PREFLIGHT" = "204" ] && echo 'preflight passes ✓' || echo 'FAILS ✗ — the browser will refuse every request')"
 echo
 echo "  Next: set API_BASE in src/api.js to"
 echo "        $URL"
-echo "  Then: bash infra/seed.sh   (loads buildings, items and places)"
+echo "  Then: node infra/seed.js   (loads buildings, items and places)"

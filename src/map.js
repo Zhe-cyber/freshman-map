@@ -276,7 +276,7 @@ function openItem(itemId) {
 function photoBlock(i) {
   return i.photo
     ? `<img class="photo" src="photos/${encodeURIComponent(i.photo)}" alt="${html(localText(i.landmark))}"
-           loading="lazy" data-zoom="photos/${encodeURIComponent(i.photo)}">`
+           data-zoom="photos/${encodeURIComponent(i.photo)}">`
     : `<div class="photo">📷 ${html(localText(i.landmark))}</div>`
 }
 

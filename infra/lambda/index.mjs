@@ -20,9 +20,20 @@ import {
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({}))
 const TABLE = process.env.TABLE || 'freshmanmap'
 
+// CORS is also set on the API itself, but the quick-create $default route
+// swallows OPTIONS before API Gateway can answer the preflight — so the
+// function returns the headers too. Belt and braces, and it keeps working
+// if someone edits the API's CORS config in the console.
+const CORS = {
+  'access-control-allow-origin': '*',
+  'access-control-allow-methods': 'GET,POST,OPTIONS',
+  'access-control-allow-headers': 'content-type',
+  'access-control-max-age': '86400'
+}
+
 const json = (statusCode, body) => ({
   statusCode,
-  headers: { 'content-type': 'application/json' },
+  headers: { 'content-type': 'application/json', ...CORS },
   body: JSON.stringify(body)
 })
 
@@ -42,6 +53,9 @@ export const handler = async (event) => {
   const path = event.rawPath || '/'
   const seg = path.split('/').filter(Boolean)      // ['c','cycu','buildings',...]
 
+  // Answer the browser's preflight before anything else.
+  if (method === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' }
+
   try {
     if (path === '/' || path === '/health') return json(200, { ok: true })
 
@@ -58,6 +72,11 @@ export const handler = async (event) => {
       const items = await bySkPrefix(campusId, 'ITEM#')
       return json(200, items.filter(i => i.buildingId === decodeURIComponent(seg[3])))
     }
+
+    // GET /c/{campus}/items — the app loads every item once and caches it.
+    // At ~50 items per campus one query beats one request per building.
+    if (method === 'GET' && seg[2] === 'items')
+      return json(200, await bySkPrefix(campusId, 'ITEM#'))
 
     if (method === 'GET' && seg[2] === 'places')
       return json(200, await bySkPrefix(campusId, 'PLACE#'))
@@ -111,9 +130,13 @@ export const handler = async (event) => {
       const current = await db.send(new GetCommand({ TableName: TABLE, Key: key }))
       if (!current.Item) return json(404, { error: 'no such activity' })
 
-      const already = (current.Item.joinedBy || []).includes(userId)
+      // First join creates a DynamoDB Set; the document client hands that back
+      // as a JS Set, not an array. Normalise before touching it.
+      const raw = current.Item.joinedBy
+      const joined = raw instanceof Set ? [...raw] : Array.isArray(raw) ? raw : []
+      const already = joined.includes(userId)
       const capacity = current.Item.capacity || 4
-      if (!already && (current.Item.joinedBy || []).length >= capacity)
+      if (!already && joined.length >= capacity)
         return json(409, { error: 'full', joined: capacity, capacity })
 
       const updated = await db.send(new UpdateCommand({
