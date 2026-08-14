@@ -2,7 +2,7 @@
 import { TYPES } from './data.js'
 import {
   campus, me, getBuildings, getPlaces, createPlace, loadItems, itemsIn, findItem,
-  getYouBikeStations, metres, floorOrder, navTo, watchMe
+  getYouBikeStations, metres, floorOrder, navTo, watchMe, photoUrl
 } from './api.js'
 import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
 import { localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
@@ -275,8 +275,8 @@ function openItem(itemId) {
 
 function photoBlock(i) {
   return i.photo
-    ? `<img class="photo" src="photos/${encodeURIComponent(i.photo)}" alt="${html(localText(i.landmark))}"
-           data-zoom="photos/${encodeURIComponent(i.photo)}">`
+    ? `<img class="photo" src="${photoUrl(i.photo)}" alt="${html(localText(i.landmark))}"
+           data-zoom="${photoUrl(i.photo)}">`
     : `<div class="photo">📷 ${html(localText(i.landmark))}</div>`
 }
 
