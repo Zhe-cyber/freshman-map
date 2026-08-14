@@ -25,13 +25,26 @@ function av(v) {
   if (typeof v === 'object') return { M: Object.fromEntries(Object.entries(v).map(([k, x]) => [k, av(x)])) }
   return { S: String(v) }
 }
-const item = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, av(v)]))
+// joinedBy must be a string SET, not a list: the join endpoint uses ADD, which
+// only works on numbers and sets, and a set is what makes simultaneous joins
+// safe. DynamoDB rejects empty sets, so drop the attribute when nobody has
+// joined rather than writing an empty one.
+const item = obj => Object.fromEntries(
+  Object.entries(obj)
+    .filter(([k, v]) => !(k === 'joinedBy' && (!Array.isArray(v) || v.length === 0)))
+    .map(([k, v]) => [k, k === 'joinedBy' ? { SS: v } : av(v)]))
 
 const rows = [
   ...MOCK.buildings.map(b => ({ pk, sk: `BLDG#${b.buildingId}`, ...b, campusId })),
   ...MOCK.items.map(i => ({ pk, sk: `ITEM#${i.itemId}`, ...i, campusId })),
   ...MOCK.places.map(p => ({ pk, sk: `PLACE#${p.placeId}`, ...p, campusId })),
-  ...(MOCK.activities || []).map(a => ({ pk, sk: `ACT#${a.activityId}`, ...a, campusId }))
+  // The mock carries a plain `joined` count. The API derives joined from the
+  // joinedBy set, so expand the count into placeholder members — otherwise the
+  // seeded number and the live number disagree the first time someone joins.
+  ...(MOCK.activities || []).map(a => ({
+    pk, sk: `ACT#${a.activityId}`, ...a, campusId,
+    joinedBy: Array.from({ length: a.joined || 0 }, (_, n) => `seed-${a.activityId}-${n}`)
+  }))
 ]
 
 const dir = 'infra/.build'

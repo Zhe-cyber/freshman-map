@@ -85,7 +85,11 @@ export async function createPlace(draft) {
   localStorage.setItem(ADDED_KEY, JSON.stringify(all))
   return place
 }
-export const getActivities = () => usingMock ? MOCK.activities : call('/activities')
+export const getActivities = async () => {
+  if (usingMock) return MOCK.activities
+  const list = await call('/activities')
+  return list.map(a => ({ ...a, joinedByMe: (a.joinedBy || []).includes(user.userId) }))
+}
 
 // The official YouBike feed now permits browser requests (CORS: *), so bike
 // availability can stay live even while the rest of the app uses mock data.
@@ -151,7 +155,10 @@ export function reportItem(itemId, value) {
 }
 
 export function joinActivity(activityId) {
-  if (!usingMock) return call(`/activities/${activityId}/join`, { method: 'POST' })
+  // The server needs to know who joined — that is what makes the counter
+  // shared across devices instead of a number on one phone.
+  if (!usingMock) return call(`/activities/${activityId}/join`,
+    { method: 'POST', body: JSON.stringify({ userId: user.userId }) })
   const a = MOCK.activities.find(x => x.activityId === activityId)
   if (a.joinedByMe) { a.joinedByMe = false; a.joined-- }
   else if (a.joined < a.capacity) { a.joinedByMe = true; a.joined++ }
@@ -161,7 +168,8 @@ export function joinActivity(activityId) {
 
 export function createActivity(title) {
   const a = { campusId, activityId: 'a' + Date.now(), icon: '🎉', title,
-    place: '中原夜市', when: '今晚 tonight', hostName: 'You',
+    place: '中原夜市', when: '今晚 tonight',
+    hostName: user.name || 'You', userId: user.userId,
     capacity: 4, joined: 1, joinedByMe: true }
   if (!usingMock) return call('/activities', { method: 'POST', body: JSON.stringify(a) })
   MOCK.activities.unshift(a)

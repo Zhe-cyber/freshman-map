@@ -81,8 +81,16 @@ export const handler = async (event) => {
     if (method === 'GET' && seg[2] === 'places')
       return json(200, await bySkPrefix(campusId, 'PLACE#'))
 
-    if (method === 'GET' && seg[2] === 'activities')
-      return json(200, await bySkPrefix(campusId, 'ACT#'))
+    // joined is always derived from joinedBy so there is one source of truth.
+    // joinedByMe is the client's job — the server does not know who is asking.
+    if (method === 'GET' && seg[2] === 'activities') {
+      const acts = await bySkPrefix(campusId, 'ACT#')
+      return json(200, acts.map(a => {
+        const raw = a.joinedBy
+        const joinedBy = raw instanceof Set ? [...raw] : Array.isArray(raw) ? raw : []
+        return { ...a, joinedBy, joined: joinedBy.length }
+      }))
+    }
 
     // POST /c/{campus}/places
     if (method === 'POST' && seg[2] === 'places') {
