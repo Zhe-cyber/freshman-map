@@ -214,3 +214,11 @@ img.photo{display:block;margin:12px auto 0;width:auto;height:auto;
   font-size:14.5px;color:var(--ink);background:#fbfdfc}
 .addbar input:focus-visible{outline:3px solid #2f8ef4;outline-offset:1px;border-color:#2f8ef4}
 .addbar .hint{font-size:11.5px;color:var(--soft);font-weight:600}
+
+/* Tap-to-place: the map takes the next click instead of dismissing the sheet. */
+.iconbtn.add.on{background:#ff8a3d;color:#fff}
+#map.placing .maplibregl-canvas{cursor:crosshair}
+.placing{position:absolute;top:126px;left:50%;transform:translateX(-50%);z-index:6;
+  background:#16302a;color:#fff;font-weight:700;font-size:13.5px;padding:9px 18px;
+  border-radius:999px;box-shadow:0 4px 14px rgba(27,58,47,.3);white-space:nowrap}
+.sheet .addbar{box-shadow:none;padding:0;margin-top:14px;background:transparent}

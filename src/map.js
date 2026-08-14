@@ -1,7 +1,7 @@
 // OWNER: A — map screen only. Nobody else edits this file.
 import { TYPES } from './data.js'
 import {
-  campus, me, getBuildings, getPlaces, loadItems, itemsIn, findItem,
+  campus, me, getBuildings, getPlaces, createPlace, loadItems, itemsIn, findItem,
   getYouBikeStations, metres, floorOrder, navTo, watchMe
 } from './api.js'
 import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
@@ -23,7 +23,8 @@ export async function initMap() {
     attributionControl: { compact: true },
     style: 'https://tiles.openfreemap.org/styles/bright'
   })
-  map.on('click', closeSheet)
+  map.on('click', e => placing ? placeHere(e.lngLat) : closeSheet())
+  document.getElementById('addpin').onclick = () => setPlacing(!placing)
   map.on('style.load', applyMapLanguage)
   map.on('load', applyMapLanguage)
 
@@ -363,6 +364,48 @@ function wire(place) {
   // Tap the photo for the full-size original — the sheet caps it at 38vh.
   s.querySelector('[data-zoom]')?.addEventListener('click', e =>
     window.open(e.currentTarget.dataset.zoom, '_blank'))
+}
+
+// --- tap the map to recommend a place -------------------------------------
+let placing = false
+
+function setPlacing(on) {
+  placing = on
+  document.getElementById('placing').hidden = !on
+  document.getElementById('addpin').classList.toggle('on', on)
+  document.getElementById('map').classList.toggle('placing', on)
+  if (on) closeSheet()
+}
+
+function placeHere({ lng, lat }) {
+  setPlacing(false)
+  openSheet(`
+    <div class="head">
+      <div class="bulb" style="background:#ff8a3d22">⭐</div>
+      <div><div class="name">${tr('addPlace')}</div>
+        <div class="sub">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div></div>
+    </div>
+    <div class="addbar">
+      <input id="ap-name" type="text" placeholder="${tr('addPlaceName')}" maxlength="60" autocomplete="off">
+      <input id="ap-note" type="text" placeholder="${tr('addPlaceNote')}" maxlength="80" autocomplete="off">
+    </div>
+    <div class="actions">
+      <button class="btn ghost" data-ap-cancel>${tr('cancel')}</button>
+      <button class="btn go" data-ap-save>${tr('addPlaceSave')}</button>
+    </div>`)
+
+  const sheet = document.getElementById('sheet')
+  sheet.querySelector('#ap-name').focus()
+  sheet.querySelector('[data-ap-cancel]').onclick = closeSheet
+  sheet.querySelector('[data-ap-save]').onclick = async () => {
+    const name = sheet.querySelector('#ap-name').value.trim()
+    if (!name) return toast(tr('addPlaceNeedName'))
+    const place = await createPlace({ name, note: sheet.querySelector('#ap-note').value.trim(), lat, lng })
+    places.push(place)
+    addPlacePin(place)
+    closeSheet()
+    toast(tr('addPlaceDone'))
+  }
 }
 
 export const resizeMap = () => map?.resize()
