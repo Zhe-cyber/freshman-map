@@ -5,7 +5,7 @@ import {
   getYouBikeStations, metres, floorOrder, score, tone, toneText, navTo, watchMe
 } from './api.js'
 import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
-import { getLanguage, localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
+import { localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
 
 let map, markers = {}, buildings = [], places = [], bikePlaces = [], fallbackBikes = []
 let allBikeStations = [], curB = null, curI = null, curP = null
@@ -109,32 +109,11 @@ function renderLanguage() {
   else if (curP) openPlace(curP, false)
 }
 
-// OpenFreeMap uses OpenStreetMap vector labels, unlike raster tiles whose text
-// is baked into an image. Only name-based layers are changed: route numbers,
-// road shields and icons keep the style's original expressions.
-// Every chain MUST end in `name` (the local Traditional Chinese). Only 16% of
-// features around CYCU carry name:en and 0.3% carry name:ja, so without that
-// last fallback most labels render blank — worse than showing Chinese, and in
-// Japanese it empties the map. Measured against Overpass over the campus bbox.
-const mapNameFields = {
-  // Both campuses are in Taiwan, so the local `name` is Traditional Chinese.
-  'zh-Hant': ['name:zh-Hant', 'name:zh-TW', 'name', 'name:nonlatin', 'name:zh'],
-  en: ['name:en', 'name_en', 'name:latin', 'name'],
-  ja: ['name:ja', 'name_ja', 'name:latin', 'name']
-}
-
-function applyMapLanguage() {
-  localizeMapControls()
-  if (!map?.isStyleLoaded()) return
-  const fields = mapNameFields[getLanguage()] || mapNameFields.en
-  const textField = ['coalesce', ...fields.map(field => ['get', field]), '']
-
-  map.getStyle().layers.forEach(layer => {
-    const original = layer.layout?.['text-field']
-    if (layer.type !== 'symbol' || !original || !/name[:_"\]]/.test(JSON.stringify(original))) return
-    map.setLayoutProperty(layer.id, 'text-field', textField)
-  })
-}
+// Basemap labels stay in the local language (Traditional Chinese).
+// Measured over the campus bbox: only 16% of OSM features carry name:en and
+// 0.3% carry name:ja, so rewriting text-field mostly produced blanks or
+// Chinese anyway. We translate OUR pins and the UI; the basemap is Chinese.
+function applyMapLanguage() { localizeMapControls() }
 
 function localizeMapControls() {
   const canvas = document.querySelector('#map .maplibregl-canvas')

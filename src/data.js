@@ -32,7 +32,8 @@ export const MOCK = {
     B('gym',  '中原大學體育館',   'Gymnasium',                 24.960043, 121.242361),
     B('act',  '學生活動中心',     'Student Activity Centre',   24.959014, 121.240978),
     B('zhen', '真知教學大樓',     'Zhen Zhi Teaching Building',24.956049, 121.241868),
-    B('elec', '電學大樓',         'Electrical Engineering',    24.955929, 121.242519)
+    B('elec', '電學大樓',         'Electrical Engineering Building', 24.955929, 121.242519),
+    B('duxin','篤信大樓',         'Duxin Building',            24.956206, 121.242582)
   ],
 
   items: [
@@ -52,8 +53,39 @@ export const MOCK = {
     I('act-2t', 'act','2F','toilet','社團辦公室走廊 · Club office hallway','男 / 女', 15, 4),
     I('zhen-2t','zhen','2F','toilet','樓梯間旁 · By the stairwell','男 / 女', 16, 5),
     I('zhen-3w','zhen','3F','water', '走廊中段 · Middle of corridor','冰 / 溫 / 熱'),
-    I('elec-1w','elec','1F','water', '大廳角落 · Lobby corner','冰 / 溫'),
-    I('elec-4t','elec','4F','toilet','電梯出來左轉 · Left out of the lift','男 / 女', 13, 7)
+    // --- surveyed 2026-08-14 from photos. Landmarks still TODO. ---
+    I('elec-b1tf','elec','B1','toilet','TODO landmark','女 women', 0, 0),
+    I('elec-b1tm','elec','B1','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-b1w','elec','B1','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-1ftf','elec','1F','toilet','TODO landmark','女 women', 0, 0),
+    I('elec-1ftm','elec','1F','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-1fw','elec','1F','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-2ftf','elec','2F','toilet','TODO landmark','女 women', 0, 0),
+    I('elec-2ftm','elec','2F','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-2fw','elec','2F','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-3ftf','elec','3F','toilet','TODO landmark','女 women', 0, 0),
+    I('elec-3ftm','elec','3F','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-3fw','elec','3F','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-4ftf','elec','4F','toilet','TODO landmark','女 women', 0, 0),
+    I('elec-4ftm','elec','4F','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-4fw','elec','4F','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-5ftm','elec','5F','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-5fw','elec','5F','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-6ftm','elec','6F','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-6fw','elec','6F','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-7ftf','elec','7F','toilet','TODO landmark','女 women', 0, 0),
+    I('elec-7fw','elec','7F','water','TODO landmark','飲水機 water dispenser'),
+    I('elec-8ftm','elec','8F','toilet','TODO landmark','男 men', 0, 0),
+    I('elec-8fw','elec','8F','water','TODO landmark','飲水機 water dispenser'),
+    I('duxin-1ftf','duxin','1F','toilet','TODO landmark','女 women', 0, 0),
+    I('duxin-1ftm','duxin','1F','toilet','TODO landmark','男 men', 0, 0),
+    I('duxin-1fw','duxin','1F','water','TODO landmark','飲水機 water dispenser'),
+    I('duxin-2ftm','duxin','2F','toilet','TODO landmark','男 men', 0, 0),
+    I('duxin-2fw','duxin','2F','water','TODO landmark','飲水機 water dispenser'),
+    I('duxin-3ftf','duxin','3F','toilet','TODO landmark','女 women', 0, 0),
+    I('duxin-3fw','duxin','3F','water','TODO landmark','飲水機 water dispenser'),
+    I('duxin-4ftm','duxin','4F','toilet','TODO landmark','男 men', 0, 0),
+    I('duxin-4fw','duxin','4F','water','TODO landmark','飲水機 water dispenser')
   ],
 
   // Outdoor pins. Food yes/no = "can I order in English?", same engine as 廁紙.
