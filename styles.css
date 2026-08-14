@@ -42,25 +42,52 @@ html,body{margin:0;height:100%;overflow:hidden;background:#eef4f1;color:var(--in
 .chip:active{transform:scale(.94)}
 .chip[data-on="1"]{background:var(--ink);color:#fff}
 
-.pin{cursor:pointer;display:grid;place-items:center;animation:bob 2.6s ease-in-out infinite;position:relative}
-.pin .bulb{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:21px;
-  border:3px solid #fff;box-shadow:0 4px 0 rgba(27,58,47,.22),0 8px 16px rgba(27,58,47,.28);transition:transform .15s}
-.pin.bldg .bulb{width:48px;height:48px;border-radius:16px;font-size:23px;background:#7c8ff2}
-.pin .cnt{position:absolute;top:-5px;right:-4px;background:#ff5d5d;color:#fff;font-size:11px;
-  font-weight:800;min-width:20px;height:20px;border-radius:10px;display:grid;place-items:center;
-  border:2.5px solid #fff;padding:0 4px}
-.pin .stem{width:3px;height:9px;background:rgba(27,58,47,.28);border-radius:2px;margin-top:-1px}
-.pin .shadow{width:16px;height:5px;border-radius:50%;background:rgba(27,58,47,.22)}
-.pin.sel .bulb{transform:scale(1.14);box-shadow:0 0 0 5px rgba(255,255,255,.6),0 4px 0 rgba(27,58,47,.22)}
-@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+/* ---------------------------------------------------------------------------
+   MAP TAGS
+   MapLibre owns .pin and .me — their transform AND position. Never set either
+   from CSS, and never animate transform on them: it overwrites the marker's
+   positioning matrix and every pin collapses into a stack at the map corner.
+   All our visuals live on .body inside.
+   --------------------------------------------------------------------------- */
+.pin{cursor:pointer}
+.pin.hide{display:none}
+.pin .body{display:flex;flex-direction:column;align-items:center}
 
-.me{width:30px;height:30px;display:grid;place-items:center}
+.ptag{display:flex;align-items:center;gap:0;background:#fff;border-radius:999px;padding:4px;
+  box-shadow:0 2px 0 rgba(27,58,47,.16),0 4px 14px rgba(27,58,47,.24);
+  animation:bob 3.2s ease-in-out infinite;transition:padding .18s,box-shadow .15s;position:relative}
+.pico{width:28px;height:28px;border-radius:50%;background:var(--dot,#7c8ff2);
+  display:grid;place-items:center;font-size:16px;flex:0 0 auto}
+/* ponytail: plain show/hide, not an animated max-width. As a flex item with
+   overflow:hidden the label collapses to 0 whatever max-width says. */
+.plbl{display:none;font-weight:700;font-size:12.5px;color:#16302a;white-space:nowrap;
+  max-width:140px;overflow:hidden;text-overflow:ellipsis}
+/* declutter: labels appear only when zoomed in far enough to read them */
+#map.labels .ptag{padding-right:11px;gap:7px}
+#map.labels .plbl{display:block}
+
+.pcnt{position:absolute;top:-4px;left:20px;background:#ff5d5d;color:#fff;font-size:10.5px;
+  font-weight:800;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;
+  border:2px solid #fff;padding:0 4px}
+
+/* thin leader down to a dot on the exact spot — this is what makes it read as
+   a tag ON the map rather than a button floating over it */
+.ptail{width:2px;height:11px;background:rgba(27,58,47,.4);position:relative}
+.ptail::after{content:"";position:absolute;bottom:-3px;left:-2px;width:6px;height:6px;
+  border-radius:50%;background:rgba(27,58,47,.55)}
+
+.pin.sel .ptag{box-shadow:0 0 0 4px rgba(47,142,244,.35),0 3px 0 rgba(27,58,47,.18),0 6px 18px rgba(27,58,47,.28)}
+.pin.bldg .ptag{border-radius:14px}
+.pin.bldg .pico{border-radius:9px}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+
+.me .body{position:relative;display:grid;place-items:center;width:30px;height:30px}
 .me .dot{width:17px;height:17px;border-radius:50%;background:#2f8ef4;border:3.5px solid #fff;
   box-shadow:0 2px 8px rgba(0,0,0,.35);z-index:2}
-.me .ring{position:absolute;width:30px;height:30px;border-radius:50%;background:rgba(47,142,244,.35);
+.me .ring{position:absolute;inset:0;border-radius:50%;background:rgba(47,142,244,.35);
   animation:pulse 2s ease-out infinite}
 @keyframes pulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.6);opacity:0}}
-@media (prefers-reduced-motion:reduce){.pin,.me .ring{animation:none}}
+@media (prefers-reduced-motion:reduce){.ptag,.me .ring{animation:none}}
 
 .sheet{position:absolute;left:0;right:0;bottom:68px;z-index:6;background:var(--card);
   border-radius:26px 26px 0 0;padding:8px 18px 20px;box-shadow:0 -8px 30px rgba(27,58,47,.22);

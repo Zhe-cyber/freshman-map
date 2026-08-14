@@ -32,22 +32,32 @@ export async function initMap() {
   addMePin()
   buildChips()
 
+  labelsByZoom()
+  map.on('zoom', labelsByZoom)
   watchMe(p => mePin.setLngLat([p.lng, p.lat]))
   document.getElementById('recenter').onclick = () =>
     map.easeTo({ center: [me.lng, me.lat], zoom: 16.6, pitch: 55, bearing: -18, duration: 800 })
   document.getElementById('sos').onclick = sos
 }
 
+// MapLibre owns .pin's transform and position — never style either, or the
+// marker detaches from the map and stacks at the corner. All our styling and
+// the bob animation live on .body inside it.
 const pinEl = (cls, inner) => {
   const el = document.createElement('div')
   el.className = 'pin ' + cls
-  el.innerHTML = inner + '<div class="stem"></div><div class="shadow"></div>'
+  el.innerHTML = `<div class="body">${inner}<div class="ptail"></div></div>`
   return el
 }
 
 function addBuildingPin(b) {
   const n = shown(b).length
-  const el = pinEl('bldg', `<div class="bulb">🏛️</div><div class="cnt">${n}</div>`)
+  const el = pinEl('bldg',
+    `<div class="ptag">
+       <span class="pico">🏛️</span>
+       <span class="plbl">${b.name}</span>
+       <span class="pcnt">${n}</span>
+     </div>`)
   el.onclick = e => { e.stopPropagation(); openBuilding(b) }
   markers[b.buildingId] = new maplibregl.Marker({ element: el, anchor: 'bottom' })
     .setLngLat([b.lng, b.lat]).addTo(map)
@@ -55,17 +65,28 @@ function addBuildingPin(b) {
 
 function addPlacePin(p) {
   const t = TYPES[p.type]
-  const el = pinEl('', `<div class="bulb" style="background:${t.color}">${p.icon || t.icon}</div>`)
+  const label = p.type === 'bike' ? `${p.bikes} 🚲` : p.name
+  const el = pinEl(p.type,
+    `<div class="ptag" style="--dot:${t.color}">
+       <span class="pico">${p.icon || t.icon}</span>
+       <span class="plbl">${label}</span>
+     </div>`)
   el.onclick = e => { e.stopPropagation(); openPlace(p) }
   markers[p.placeId] = new maplibregl.Marker({ element: el, anchor: 'bottom' })
     .setLngLat([p.lng, p.lat]).addTo(map)
+}
+
+// Declutter: labels only once you're zoomed in enough to read them.
+function labelsByZoom() {
+  const show = map.getZoom() >= 16
+  document.getElementById('map').classList.toggle('labels', show)
 }
 
 let mePin
 function addMePin() {
   const el = document.createElement('div')
   el.className = 'me'
-  el.innerHTML = '<div class="ring"></div><div class="dot"></div>'
+  el.innerHTML = '<div class="body"><div class="ring"></div><div class="dot"></div></div>'
   mePin = new maplibregl.Marker({ element: el }).setLngLat([me.lng, me.lat]).addTo(map)
 }
 
@@ -90,10 +111,10 @@ function filter() {
   buildings.forEach(b => {
     const n = shown(b).length
     const el = markers[b.buildingId].getElement()
-    el.style.display = n ? '' : 'none'
-    el.querySelector('.cnt').textContent = n
+    el.classList.toggle('hide', !n)      // not style.display — MapLibre owns that
+    el.querySelector('.pcnt').textContent = n
   })
-  places.forEach(p => { markers[p.placeId].getElement().style.display = active.has(p.type) ? '' : 'none' })
+  places.forEach(p => markers[p.placeId].getElement().classList.toggle('hide', !active.has(p.type)))
   closeSheet()
 }
 
