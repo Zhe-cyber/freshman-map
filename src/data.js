@@ -95,7 +95,7 @@ export const MOCK = {
       lat:24.955952, lng:121.240222, price:1, diet:['veg'], cash:true, yes:16, no:2,
       say:'三個一百，謝謝', sayEn:'Three for a hundred, thanks' },
 
-    // Live from apis.youbike.com.tw (CORS-blocked in browser → CLOUD fetches it)
+    // Offline fallback. The map normally replaces these with the official live YouBike feed.
     { placeId:'b1', type:'bike', name:'中原大學', en:'YouBike · 站號 500304004',
       lat:24.957940, lng:121.240200, bikes:9, docks:99 },
     { placeId:'b2', type:'bike', name:'中原大學土木館(中原埤塘)', en:'YouBike · 500304146',

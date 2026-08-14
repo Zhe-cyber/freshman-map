@@ -1,4 +1,6 @@
 // Shared bits all three screens use. Keep this small.
+import { t } from './i18n.js'
+
 const sheet = () => document.getElementById('sheet')
 
 export function openSheet(html) {
@@ -26,10 +28,10 @@ export function toast(msg) {
 export function scoreBar(label, r, colour) {
   const p = Math.round(r.yes / (r.yes + r.no) * 100)
   const c = colour || (p >= 60 ? '#34c98b' : p >= 35 ? '#f2c53d' : '#ff6b6b')
-  const t = p >= 60 ? '#1f9d6b' : p >= 35 ? '#a8730a' : '#e04848'
+  const textColour = p >= 60 ? '#1f9d6b' : p >= 35 ? '#a8730a' : '#e04848'
   return `<div class="score">
-    <div class="stop"><span>${label}</span><span class="val" style="color:${t}">${Math.round(p / 10)} / 10</span></div>
+    <div class="stop"><span>${label}</span><span class="val" style="color:${textColour}">${Math.round(p / 10)} / 10</span></div>
     <div class="track"><i style="width:${p}%;background:${c}"></i></div>
-    <div class="meta">${r.yes + r.no} reports · last checked 2 h ago</div>
+    <div class="meta">${t('reportsMeta', { count: r.yes + r.no })}</div>
   </div>`
 }

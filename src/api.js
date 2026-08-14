@@ -3,6 +3,7 @@
 import { MOCK } from './data.js'
 
 const API_BASE = ''   // ← CLOUD: put the API Gateway URL here on Day 2
+const YOUBIKE_URL = 'https://apis.youbike.com.tw/json/station-yb2.json'
 
 // Multi-tenant backdoor: ?campus=ntu switches campus. 3 lines, whole demo.
 export const campusId = new URLSearchParams(location.search).get('campus') || 'cycu'
@@ -28,6 +29,46 @@ async function call(path, options) {
 export const getBuildings  = () => usingMock ? MOCK.buildings  : call('/buildings')
 export const getPlaces     = () => usingMock ? MOCK.places     : call('/places')
 export const getActivities = () => usingMock ? MOCK.activities : call('/activities')
+
+// The official YouBike feed now permits browser requests (CORS: *), so bike
+// availability can stay live even while the rest of the app uses mock data.
+// Cache briefly because map pans should never re-download the ~9k-station feed.
+let youBikeCache = null
+let youBikeFetchedAt = 0
+export async function getYouBikeStations({ force = false } = {}) {
+  if (!force && youBikeCache && Date.now() - youBikeFetchedAt < 55_000) return youBikeCache
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 15_000)
+  try {
+    const r = await fetch(YOUBIKE_URL, { cache: 'no-cache', signal: controller.signal })
+    if (!r.ok) throw new Error(`YouBike ${r.status}`)
+    const data = await r.json()
+    if (!Array.isArray(data)) throw new Error('Unexpected YouBike response')
+
+    youBikeCache = data.map(s => ({
+      placeId: `yb-${s.station_no}`,
+      type: 'bike',
+      name: s.name_tw,
+      en: `${s.name_en || 'YouBike'} · ${s.station_no}`,
+      address: s.address_tw,
+      stationNo: s.station_no,
+      lat: Number(s.lat),
+      lng: Number(s.lng),
+      bikes: Number(s.available_spaces) || 0,
+      electricBikes: Number(s.available_spaces_detail?.eyb) || 0,
+      returns: Number(s.empty_spaces) || 0,
+      docks: Number(s.parking_spaces) || 0,
+      operating: Number(s.status) === 1,
+      updatedAt: s.updated_at,
+      live: true
+    })).filter(s => Number.isFinite(s.lat) && Number.isFinite(s.lng))
+    youBikeFetchedAt = Date.now()
+    return youBikeCache
+  } finally {
+    clearTimeout(timeout)
+  }
+}
 
 // All items in one call, cached. ~50 records — an endpoint per building would
 // be an N+1 for no gain, and a sync filter keeps callers off async.

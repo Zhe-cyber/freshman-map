@@ -2,12 +2,16 @@
 import { TYPES } from './data.js'
 import {
   campus, me, getBuildings, getPlaces, loadItems, itemsIn, findItem, reportItem,
-  metres, floorOrder, score, tone, toneText, navTo, watchMe
+  getYouBikeStations, metres, floorOrder, score, tone, toneText, navTo, watchMe
 } from './api.js'
 import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
+import { getLanguage, localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
 
-let map, markers = {}, buildings = [], places = [], curB = null, curI = null
+let map, markers = {}, buildings = [], places = [], bikePlaces = [], fallbackBikes = []
+let allBikeStations = [], curB = null, curI = null, curP = null
 const active = new Set(Object.keys(TYPES))
+const html = value => String(value ?? '').replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
 export async function initMap() {
   map = new maplibregl.Map({
@@ -17,27 +21,35 @@ export async function initMap() {
     pitch: 55,             // the tilt is what makes it read as a game, not Google Maps
     bearing: -18,
     attributionControl: { compact: true },
-    style: {
-      version: 8,
-      sources: { osm: { type: 'raster', tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-                        tileSize: 256, attribution: '© OpenStreetMap contributors' } },
-      layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
-    }
+    style: 'https://tiles.openfreemap.org/styles/bright'
   })
   map.on('click', closeSheet)
+  map.on('style.load', applyMapLanguage)
+  map.on('load', applyMapLanguage)
 
-  ;[buildings, places] = await Promise.all([getBuildings(), getPlaces(), loadItems()])
+  const loaded = await Promise.all([getBuildings(), getPlaces(), loadItems()])
+  buildings = loaded[0]
+  fallbackBikes = loaded[1].filter(p => p.type === 'bike').map(p => ({ ...p, live: false }))
+  places = loaded[1].filter(p => p.type !== 'bike')
   buildings.forEach(addBuildingPin)
   places.forEach(addPlacePin)
   addMePin()
   buildChips()
+  onLanguageChange(renderLanguage)
 
   labelsByZoom()
   map.on('zoom', labelsByZoom)
+  map.on('moveend', renderBikePins)
   watchMe(p => mePin.setLngLat([p.lng, p.lat]))
   document.getElementById('recenter').onclick = () =>
     map.easeTo({ center: [me.lng, me.lat], zoom: 16.6, pitch: 55, bearing: -18, duration: 800 })
   document.getElementById('sos').onclick = sos
+
+  await refreshYouBike(true)
+  setInterval(() => { if (!document.hidden) refreshYouBike(false) }, 60_000)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshYouBike(false)
+  })
 }
 
 // MapLibre owns .pin's transform and position — never style either, or the
@@ -55,7 +67,7 @@ function addBuildingPin(b) {
   const el = pinEl('bldg',
     `<div class="ptag">
        <span class="pico">🏛️</span>
-       <span class="plbl">${b.name}</span>
+       <span class="plbl">${html(localName(b))}</span>
        <span class="pcnt">${n}</span>
      </div>`)
   el.onclick = e => { e.stopPropagation(); openBuilding(b) }
@@ -65,15 +77,119 @@ function addBuildingPin(b) {
 
 function addPlacePin(p) {
   const t = TYPES[p.type]
-  const label = p.type === 'bike' ? `${p.bikes} 🚲` : p.name
+  const label = p.type === 'bike' ? bikeLabel(p) : localName(p)
   const el = pinEl(p.type,
     `<div class="ptag" style="--dot:${t.color}">
        <span class="pico">${p.icon || t.icon}</span>
-       <span class="plbl">${label}</span>
+       <span class="plbl">${html(label)}</span>
      </div>`)
   el.onclick = e => { e.stopPropagation(); openPlace(p) }
   markers[p.placeId] = new maplibregl.Marker({ element: el, anchor: 'bottom' })
     .setLngLat([p.lng, p.lat]).addTo(map)
+}
+
+const bikeLabel = p => p.operating === false ? tr('paused') : `${p.bikes} 🚲`
+
+function renderLanguage() {
+  applyMapLanguage()
+  buildChips()
+  buildings.forEach(b => {
+    const label = markers[b.buildingId]?.getElement().querySelector('.plbl')
+    if (label) label.textContent = localName(b)
+  })
+  places.forEach(p => {
+    const label = markers[p.placeId]?.getElement().querySelector('.plbl')
+    if (label) label.textContent = localName(p)
+  })
+  renderBikePins()
+
+  if (!document.getElementById('sheet').classList.contains('open')) return
+  if (curI) openItem(curI.itemId)
+  else if (curB) openBuilding(curB, false)
+  else if (curP) openPlace(curP, false)
+}
+
+// OpenFreeMap uses OpenStreetMap vector labels, unlike raster tiles whose text
+// is baked into an image. Only name-based layers are changed: route numbers,
+// road shields and icons keep the style's original expressions.
+const mapNameFields = {
+  // Both campuses are in Taiwan, so the local `name` is Traditional Chinese.
+  'zh-Hant': ['name:zh-Hant', 'name:zh-TW', 'name', 'name:nonlatin', 'name:zh'],
+  en: ['name:en', 'name_en', 'name:latin'],
+  ja: ['name:ja', 'name_ja']
+}
+
+function applyMapLanguage() {
+  localizeMapControls()
+  if (!map?.isStyleLoaded()) return
+  const fields = mapNameFields[getLanguage()] || mapNameFields.en
+  const textField = ['coalesce', ...fields.map(field => ['get', field]), '']
+
+  map.getStyle().layers.forEach(layer => {
+    const original = layer.layout?.['text-field']
+    if (layer.type !== 'symbol' || !original || !/name[:_"\]]/.test(JSON.stringify(original))) return
+    map.setLayoutProperty(layer.id, 'text-field', textField)
+  })
+}
+
+function localizeMapControls() {
+  const canvas = document.querySelector('#map .maplibregl-canvas')
+  if (canvas) canvas.setAttribute('aria-label', tr('mapCanvas'))
+  const attribution = document.querySelector('#map .maplibregl-ctrl-attrib-button')
+  if (attribution) {
+    attribution.title = tr('toggleMapInfo')
+    attribution.setAttribute('aria-label', tr('toggleMapInfo'))
+  }
+}
+
+// Keep only stations in the current viewport. Panning is instant because it
+// filters the cached feed; only the one-minute refresh touches the network.
+function renderBikePins() {
+  if (!map || !allBikeStations.length) return
+  const bounds = map.getBounds()
+  const center = { lat: map.getCenter().lat, lng: map.getCenter().lng }
+  const next = allBikeStations
+    .filter(p => bounds.contains([p.lng, p.lat]))
+    .sort((a, b) => metres(center, a) - metres(center, b))
+    .slice(0, 30)
+  const nextIds = new Set(next.map(p => p.placeId))
+
+  bikePlaces.forEach(p => {
+    if (nextIds.has(p.placeId)) return
+    markers[p.placeId]?.remove()
+    delete markers[p.placeId]
+  })
+
+  next.forEach(p => {
+    const marker = markers[p.placeId]
+    if (!marker) {
+      addPlacePin(p)
+      return
+    }
+    const el = marker.getElement()
+    el.querySelector('.plbl').textContent = bikeLabel(p)
+    el.onclick = e => { e.stopPropagation(); openPlace(p) }
+    el.classList.toggle('hide', !active.has('bike'))
+  })
+  bikePlaces = next
+
+  const current = bikePlaces.find(p => p.placeId === curP?.placeId)
+  if (current && document.getElementById('sheet').classList.contains('open')) {
+    openPlace(current, false)
+  }
+}
+
+async function refreshYouBike(initial) {
+  try {
+    allBikeStations = await getYouBikeStations({ force: !initial })
+  } catch (error) {
+    console.warn('[Freshman Map] live YouBike unavailable', error)
+    allBikeStations = allBikeStations.length
+      ? allBikeStations.map(p => ({ ...p, live: false }))
+      : fallbackBikes
+    if (initial) toast(tr('liveBikeError'))
+  }
+  renderBikePins()
 }
 
 // Declutter: labels only once you're zoomed in enough to read them.
@@ -95,10 +211,11 @@ const shown = b => itemsIn(b.buildingId).filter(i => active.has(i.type))
 function buildChips() {
   const box = document.getElementById('chips')
   box.innerHTML = ''
-  Object.entries(TYPES).forEach(([k, t]) => {
+  Object.entries(TYPES).forEach(([k, type]) => {
     const b = document.createElement('button')
-    b.className = 'chip'; b.dataset.on = '1'
-    b.innerHTML = `<span>${t.icon}</span>${t.label}`
+    b.className = 'chip'; b.dataset.on = active.has(k) ? '1' : '0'
+    b.innerHTML = `<span>${type.icon}</span>`
+    b.append(document.createTextNode(tr(`type.${k}`)))
     b.onclick = () => {
       active.has(k) ? (active.delete(k), b.dataset.on = '0') : (active.add(k), b.dataset.on = '1')
       filter()
@@ -114,7 +231,8 @@ function filter() {
     el.classList.toggle('hide', !n)      // not style.display — MapLibre owns that
     el.querySelector('.pcnt').textContent = n
   })
-  places.forEach(p => markers[p.placeId].getElement().classList.toggle('hide', !active.has(p.type)))
+  ;[...places, ...bikePlaces].forEach(p =>
+    markers[p.placeId]?.getElement().classList.toggle('hide', !active.has(p.type)))
   closeSheet()
 }
 
@@ -124,8 +242,8 @@ function select(id) {
 }
 
 // --- building → floor directory. No 3D, no floor plans, no indoor positioning.
-export function openBuilding(b) {
-  curB = b; curI = null
+export function openBuilding(b, move = true) {
+  curB = b; curI = null; curP = null
   select(b.buildingId)
 
   const byFloor = {}
@@ -138,69 +256,77 @@ export function openBuilding(b) {
         ? `<span class="pill" style="background:${tone(score(i.reliability))}22;color:${toneText(score(i.reliability))}">${Math.round(score(i.reliability) / 10)}/10</span>` : ''
       return `<div class="item" data-item="${i.itemId}">
         <div class="ic" style="background:${t.color}22">${t.icon}</div>
-        <div><div class="tt">${t.label} ${t.en}</div><div class="ss">${i.landmark}</div></div>
+        <div><div class="tt">${html(tr(`type.${i.type}`))}</div><div class="ss">${html(localText(i.landmark))}</div></div>
         ${pill}<span class="chev">›</span></div>`
     }).join('')}</div>`).join('')
 
   openSheet(`
     <div class="head">
       <div class="bulb" style="background:#7c8ff233">🏛️</div>
-      <div><div class="name">${b.name}</div><div class="sub">${b.en}</div></div>
-      <div class="dist">${metres(me, b)} m<small>away</small></div>
+      <div><div class="name">${html(localName(b))}</div><div class="sub">${html(secondaryName(b))}</div></div>
+      <div class="dist">${tr('distanceMetres', { count: metres(me, b) })}</div>
     </div>${floors}
-    <div class="actions"><button class="btn go" data-nav>🧭 帶我去這棟 Take me there</button></div>`)
+    <div class="actions"><button class="btn go" data-nav>🧭 ${tr('takeMe')}</button></div>`)
 
   wire()
-  map.easeTo({ center: [b.lng, b.lat], offset: [0, -130], duration: 600 })
+  if (move) map.easeTo({ center: [b.lng, b.lat], offset: [0, -130], duration: 600 })
 }
 
 function openItem(itemId) {
   const i = findItem(itemId)
-  curI = i
+  curI = i; curP = null
   const t = TYPES[i.type]
   openSheet(`
     <div class="head">
       <button class="back" data-back>‹</button>
       <div class="bulb" style="background:${t.color}22">${t.icon}</div>
-      <div><div class="name">${t.label} · ${i.floor}</div><div class="sub">${curB.name} · ${i.note}</div></div>
+      <div><div class="name">${tr(`type.${i.type}`)} · ${i.floor}</div><div class="sub">${html(localName(curB))} · ${html(localText(i.note))}</div></div>
     </div>
-    <div class="photo">📷 ${i.landmark}</div>
-    ${i.reliability ? scoreBar('有衛生紙 · has paper', i.reliability) +
+    <div class="photo">📷 ${html(localText(i.landmark))}</div>
+    ${i.reliability ? scoreBar(tr('hasPaper'), i.reliability) +
       `<div class="actions">
-         <button class="btn yes" data-report="1">有紙</button>
-         <button class="btn no" data-report="0">沒紙</button></div>` : ''}
-    <div class="actions"><button class="btn go" data-nav>🧭 Go</button></div>`)
+         <button class="btn yes" data-report="1">${tr('hasPaperYes')}</button>
+         <button class="btn no" data-report="0">${tr('hasPaperNo')}</button></div>` : ''}
+    <div class="actions"><button class="btn go" data-nav>🧭 ${tr('go')}</button></div>`)
   wire()
 }
 
-function openPlace(p) {
-  curB = null; curI = null
+function openPlace(p, move = true) {
+  curB = null; curI = null; curP = p
   select(p.placeId)
   const t = TYPES[p.type]
   let body = ''
 
   if (p.type === 'food') {
-    body = scoreBar('可以用英文點餐 · English OK', p, '#ff8a3d') +
-      `<div class="say" data-say>💬 <div>${p.say}<small>${p.sayEn}</small></div></div>`
+    body = scoreBar(tr('englishOkay'), p, '#ff8a3d') +
+      `<div class="say" data-say>💬 <div>${html(localPhrase(p))}<small>${html(sayMeaning(p))}</small></div></div>`
   } else if (p.type === 'bike') {
-    const pct = Math.round(p.bikes / p.docks * 100)
+    const pct = p.docks ? Math.min(100, Math.round(p.bikes / p.docks * 100)) : 0
+    const updated = p.updatedAt ? p.updatedAt.replace(/^\d{4}-\d{2}-\d{2} /, '') : null
+    const electric = p.electricBikes ? tr('electricBikes', { count: p.electricBikes }) : ''
+    const status = p.operating === false ? tr('bikeUnavailable')
+      : p.live ? tr('updated', { time: updated, electric })
+      : updated ? tr('lastUpdated', { time: updated })
+      : tr('savedBike')
     body = `<div class="score">
-      <div class="stop"><span>可借車輛 · bikes available</span>
+      <div class="stop"><span>${tr('bikesAvailable')}</span>
         <span class="val" style="color:${p.bikes ? '#1f9d6b' : '#e04848'}">${p.bikes} / ${p.docks}</span></div>
       <div class="track"><i style="width:${pct}%;background:${p.bikes ? '#f2c53d' : '#ff6b6b'}"></i></div>
-      <div class="meta">Live from YouBike open data</div></div>`
+      <div class="stop"><span>${tr('returnDocks')}</span>
+        <span class="val" style="color:${p.returns ? '#1f9d6b' : '#e04848'}">${p.returns ?? '—'}</span></div>
+      <div class="meta">${status}</div></div>`
   }
 
   openSheet(`
     <div class="head">
       <div class="bulb" style="background:${t.color}22">${p.icon || t.icon}</div>
-      <div><div class="name">${p.name}</div><div class="sub">${p.en}</div></div>
-      <div class="dist">${metres(me, p)} m<small>away</small></div>
+      <div><div class="name">${html(localName(p))}</div><div class="sub">${html(secondaryName(p))}</div></div>
+      <div class="dist">${tr('distanceMetres', { count: metres(me, p) })}</div>
     </div>${body}
-    <div class="actions"><button class="btn go" data-nav>🧭 Go</button></div>`)
+    <div class="actions"><button class="btn go" data-nav>🧭 ${tr('go')}</button></div>`)
 
   wire(p)
-  map.easeTo({ center: [p.lng, p.lat], offset: [0, -110], duration: 600 })
+  if (move) map.easeTo({ center: [p.lng, p.lat], offset: [0, -110], duration: 600 })
 }
 
 // 衛生紙 SOS — skips the map entirely. Best-scoring toilets first, then nearest.
@@ -214,12 +340,12 @@ function sos() {
 
   openSheet(`
     <div class="head"><div class="bulb" style="background:#ffdede">🧻</div>
-      <div><div class="name">衛生紙 SOS</div><div class="sub">Closest toilets that actually have paper</div></div></div>
+      <div><div class="name">${tr('sosName')}</div><div class="sub">${tr('sosSubtitle')}</div></div></div>
     ${all.map(x => `<div class="item" data-sos="${x.b.buildingId}|${x.i.itemId}">
       <div class="ic" style="background:#34c98b22">🧻</div>
-      <div><div class="tt">${x.b.name} · ${x.i.floor}</div><div class="ss">${x.i.landmark}</div></div>
+      <div><div class="tt">${html(localName(x.b))} · ${x.i.floor}</div><div class="ss">${html(localText(x.i.landmark))}</div></div>
       <span class="pill" style="background:${tone(x.p)}22;color:${toneText(x.p)}">${Math.round(x.p / 10)}/10</span>
-      <span class="chev">${x.d}m ›</span></div>`).join('')}`)
+      <span class="chev">${tr('distanceMetres', { count: x.d })} ›</span></div>`).join('')}`)
   wire()
 }
 
@@ -228,7 +354,7 @@ function wire(place) {
   const s = document.getElementById('sheet')
   s.querySelectorAll('[data-item]').forEach(el => el.onclick = () => openItem(el.dataset.item))
   s.querySelector('[data-back]')?.addEventListener('click', () => openBuilding(curB))
-  s.querySelector('[data-say]')?.addEventListener('click', () => toast('「' + place.say + '」'))
+  s.querySelector('[data-say]')?.addEventListener('click', () => toast('「' + localPhrase(place) + '」'))
   s.querySelectorAll('[data-sos]').forEach(el => el.onclick = () => {
     const [bid, iid] = el.dataset.sos.split('|')
     curB = buildings.find(b => b.buildingId === bid)
@@ -238,7 +364,7 @@ function wire(place) {
     const ok = el.dataset.report === '1'
     await reportItem(curI.itemId, ok)
     openItem(curI.itemId)
-    toast(ok ? '謝謝！+10 XP 🎉' : '記錄了，謝謝 🙏')
+    toast(ok ? tr('reportThanks') : tr('reportRecorded'))
   })
   s.querySelector('[data-nav]')?.addEventListener('click', () => {
     const target = place || curB

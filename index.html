@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#16302a" />
 <title>Freshman Map — CYCU</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Noto+Sans+JP:wght@500;700&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet" />
 <link href="./styles.css" rel="stylesheet" />
 </head>
 <body>
@@ -16,18 +16,23 @@
   <div class="hud topbar">
     <div class="badge">
       <div class="avatar">🐣</div>
-      <div><div class="lvl">Lv 3 <small>生存中 · surviving</small></div><div class="xpbar"><i></i></div></div>
+      <div><div class="lvl">Lv 3 <small data-i18n="surviving"></small></div><div class="xpbar"><i></i></div></div>
     </div>
     <div class="spacer"></div>
-    <button class="iconbtn sos" id="sos" title="衛生紙 SOS">🧻</button>
-    <button class="iconbtn" id="recenter" title="Back to me">🎯</button>
+    <select class="lang-select" id="language" data-i18n-aria="language">
+      <option value="zh-Hant">繁中</option>
+      <option value="en">EN</option>
+      <option value="ja">日本語</option>
+    </select>
+    <button class="iconbtn sos" id="sos" data-i18n-title="sosTitle">🧻</button>
+    <button class="iconbtn" id="recenter" data-i18n-title="recenterTitle">🎯</button>
   </div>
   <div class="hud chips float" id="chips"></div>
 </div>
 
 <div class="screen" id="s-food">
   <div class="scroll">
-    <div class="h1">美食 Food<small>中原夜市 · 就在校門口 right outside the gate</small></div>
+    <div class="h1"><span data-i18n="foodTitle"></span><small data-i18n="foodSubtitle"></small></div>
     <div class="chips" id="fchips"></div>
     <div id="flist"></div>
   </div>
@@ -35,9 +40,9 @@
 
 <div class="screen" id="s-buddy">
   <div class="scroll">
-    <div class="h1">BuddyUp<small>一個人不好吃飯 · don't eat alone</small></div>
+    <div class="h1">BuddyUp<small data-i18n="buddySubtitle"></small></div>
     <div id="blist"></div>
-    <button class="btn ghost wide" id="newact">➕ 開一個新活動 Create activity</button>
+    <button class="btn ghost wide" id="newact">➕ <span data-i18n="newActivity"></span></button>
   </div>
 </div>
 
@@ -45,9 +50,9 @@
 <div class="toast" id="toast"></div>
 
 <nav class="nav">
-  <button class="on" data-screen="s-map"><span>🗺️</span>地圖</button>
-  <button data-screen="s-food"><span>🍜</span>美食</button>
-  <button data-screen="s-buddy"><span>🤝</span>BuddyUp</button>
+  <button class="on" data-screen="s-map"><span class="nav-icon">🗺️</span><span class="nav-label" data-i18n="navMap"></span></button>
+  <button data-screen="s-food"><span class="nav-icon">🍜</span><span class="nav-label" data-i18n="navFood"></span></button>
+  <button data-screen="s-buddy"><span class="nav-icon">🤝</span><span class="nav-label" data-i18n="navBuddy"></span></button>
 </nav>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -56,14 +61,25 @@
   import { initFood } from './src/food.js'
   import { initBuddy } from './src/buddy.js'
   import { campus, usingMock } from './src/api.js'
+  import { applyTranslations, getLanguage, localName, onLanguageChange, setLanguage, t } from './src/i18n.js'
+  import { closeSheet } from './src/ui.js'
 
-  document.title = `Freshman Map — ${campus.name}`
+  const language = document.getElementById('language')
+  const translatePage = () => {
+    applyTranslations()
+    language.value = getLanguage()
+    document.title = t('appTitle', { campus: localName(campus) })
+  }
+  language.onchange = () => setLanguage(language.value)
+  onLanguageChange(translatePage)
+  translatePage()
 
   document.querySelectorAll('.nav button').forEach(b => b.onclick = () => {
     document.querySelectorAll('.nav button').forEach(x => x.classList.remove('on'))
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'))
     b.classList.add('on')
     document.getElementById(b.dataset.screen).classList.add('on')
+    closeSheet()
     if (b.dataset.screen === 's-map') setTimeout(resizeMap, 50)
   })
 

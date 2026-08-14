@@ -1,15 +1,17 @@
 // OWNER: B — BuddyUp screen only.
 import { getActivities, joinActivity, createActivity } from './api.js'
 import { toast } from './ui.js'
+import { localText, onLanguageChange, t } from './i18n.js'
 
 export async function initBuddy() {
   document.getElementById('newact').onclick = async () => {
-    const title = prompt('活動名稱 Activity name?', '🍜 一起吃拉麵')
+    const title = prompt(t('activityPrompt'), t('activityExample'))
     if (!title) return
     await createActivity(title)
     render()
-    toast('活動開好了！等人加入 🎉')
+    toast(t('activityCreated'))
   }
+  onLanguageChange(render)
   render()
 }
 
@@ -22,14 +24,14 @@ async function render() {
     const seats = Array.from({ length: a.capacity },
       (_, i) => `<div class="seat${i < a.joined ? ' on' : ''}">${i < a.joined ? '🙂' : ''}</div>`).join('')
     const cls = a.joinedByMe ? 'done' : full ? 'full' : ''
-    const label = a.joinedByMe ? '✓ 已加入' : full ? '額滿 Full' : '加入 Join'
+    const label = a.joinedByMe ? t('joined') : full ? t('full') : t('join')
     return `<div class="card">
       <div class="arow">
         <div class="aic">${a.icon}</div>
         <div style="flex:1">
-          <div class="fname">${a.title}</div>
-          <div class="fsub">${a.when} · ${a.place}</div>
-          <div class="fsub">by ${a.hostName}</div>
+          <div class="fname">${localText(a.title)}</div>
+          <div class="fsub">${localText(a.when)} · ${localText(a.place)}</div>
+          <div class="fsub">${t('by', { name: a.hostName })}</div>
         </div>
         <button class="abtn ${cls}" data-join="${a.activityId}"${full && !a.joinedByMe ? ' disabled' : ''}>${label}</button>
       </div>
@@ -40,8 +42,8 @@ async function render() {
   el.querySelectorAll('[data-join]').forEach(n => n.onclick = async () => {
     const r = await joinActivity(n.dataset.join)
     render()
-    toast(r.full ? '額滿了 · this one is full 😢'
-      : r.joinedByMe ? (r.joined >= r.capacity ? '加入成功！額滿囉 🎉 +20 XP' : '加入成功！+20 XP 🎉')
-      : '取消了 · left the activity')
+    toast(r.full ? t('activityFull')
+      : r.joinedByMe ? (r.joined >= r.capacity ? t('joinSuccessFull') : t('joinSuccess'))
+      : t('activityLeft'))
   })
 }

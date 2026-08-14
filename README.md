@@ -5,6 +5,9 @@ CYCU · 中原大學
 Helps new students at 中原大學 adapt in days instead of weeks.
 Toilets (and whether they have paper), food you can actually order, and people to eat with.
 
+The interface supports Traditional Chinese, English and Japanese. The selected language is
+saved in the browser and applied across the map, food and BuddyUp screens.
+
 ## Run it
 
 No build step, no `npm install`. It's ES modules + a CDN script tag.
@@ -66,16 +69,18 @@ Self-service campus signup is Phase 2 — the architecture allows it, we're not 
 
 ## Data provenance
 
+- **Basemap**: OpenFreeMap vector tiles built from OpenStreetMap. Map labels strictly follow the
+  selected Traditional Chinese, English or Japanese language; untranslated labels are hidden.
 - **Buildings + restaurants**: real coordinates from OpenStreetMap (Overpass API).
 - **YouBike**: `https://apis.youbike.com.tw/json/station-yb2.json` — free, no key, 9,446 stations.
-  CORS-blocked in the browser, so CLOUD fetches it on a schedule and caches it.
+  The browser fetches it directly, shows stations in the visible map area, and refreshes once a minute.
 - **Toilets, water dispensers, ATMs**: do not exist in any open dataset. That's the walking
   survey, and it's also why this app is worth building.
 - Floors, landmarks and reliability counts in `data.js` are placeholders until the survey lands.
 
 ## Not done yet
 
-- Real API (mock only)
+- Real API for buildings, places and activities (YouBike is already live)
 - Photo upload (the 📷 box is a placeholder)
-- 日文 / 馬來文
+- 馬來文
 - Login — anonymous for now, deliberately

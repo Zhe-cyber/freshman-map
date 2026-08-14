@@ -1,0 +1,274 @@
+export const LANGUAGES = ['zh-Hant', 'en', 'ja']
+
+const messages = {
+  'zh-Hant': {
+    appTitle: 'Freshman Map — {campus}', surviving: '生存中', language: '語言',
+    mapCanvas: '互動式地圖', toggleMapInfo: '顯示或隱藏地圖資訊',
+    sosTitle: '衛生紙 SOS', recenterTitle: '回到我的位置',
+    foodTitle: '美食', foodSubtitle: '中原夜市 · 就在校門口',
+    buddySubtitle: '一個人不好吃飯 · 找人一起吧', newActivity: '開一個新活動',
+    navMap: '地圖', navFood: '美食', navBuddy: '夥伴',
+    'type.toilet': '廁所', 'type.water': '飲水機', 'type.atm': 'ATM',
+    'type.food': '美食', 'type.bike': 'U-Bike', 'type.gate': '校門',
+    paused: '暫停', away: '公尺', takeMe: '帶我去', go: '帶我去',
+    hasPaper: '有衛生紙', hasPaperYes: '有紙', hasPaperNo: '沒紙',
+    englishOkay: '可以用英文點餐', orderEnglish: '英文',
+    bikesAvailable: '可借車輛', returnDocks: '可還空位',
+    bikeUnavailable: '暫停營運', updated: '更新於 {time}{electric} · 每分鐘更新',
+    lastUpdated: '上次更新 {time} · 即時連線失敗', savedBike: '顯示已儲存的資料 · 即時連線失敗',
+    electricBikes: ' · {count} 輛電輔車', liveBikeError: 'YouBike 即時資料無法連線 · 顯示已儲存的車站',
+    sosName: '衛生紙 SOS', sosSubtitle: '附近且有衛生紙的廁所',
+    reportThanks: '謝謝！+10 XP 🎉', reportRecorded: '記錄了，謝謝 🙏',
+    reportsMeta: '{count} 筆回報 · 2 小時前檢查',
+    filterVeg: '素食', filterCheap: 'NT$ ~100', filterNear: '5 分鐘', noMatches: '沒有符合的店', viewDetails: '查看詳細資料', close: '關閉',
+    distanceMetres: '{count} 公尺', phraseHint: '點一下顯示這句話', translationUnavailable: '暫無翻譯',
+    'description.building': '校園建築', 'description.restaurant': '餐廳',
+    'description.bikeStation': 'YouBike 車站 · {station}', 'description.entrance': '校園入口', 'description.atm': '自動提款機',
+    'diet.veg': '素食', 'diet.vegan': '全素', 'diet.ask': '清真？要問', cash: '現金',
+    activityPrompt: '活動名稱？', activityExample: '🍜 一起吃拉麵', activityCreated: '活動開好了！等人加入 🎉',
+    joined: '✓ 已加入', full: '額滿', join: '加入', by: '主揪 {name}',
+    activityFull: '額滿了 😢', joinSuccessFull: '加入成功！額滿囉 🎉 +20 XP',
+    joinSuccess: '加入成功！+20 XP 🎉', activityLeft: '已取消加入'
+  },
+  en: {
+    appTitle: 'Freshman Map — {campus}', surviving: 'Surviving', language: 'Language',
+    mapCanvas: 'Interactive map', toggleMapInfo: 'Show or hide map information',
+    sosTitle: 'Toilet paper SOS', recenterTitle: 'Back to my location',
+    foodTitle: 'Food', foodSubtitle: 'Zhongyuan Night Market · right outside the gate',
+    buddySubtitle: "Don't eat alone · find some company", newActivity: 'Create activity',
+    navMap: 'Map', navFood: 'Food', navBuddy: 'BuddyUp',
+    'type.toilet': 'Toilet', 'type.water': 'Water', 'type.atm': 'ATM',
+    'type.food': 'Food', 'type.bike': 'U-Bike', 'type.gate': 'Entrance',
+    paused: 'Paused', away: 'away', takeMe: 'Take me there', go: 'Go',
+    hasPaper: 'Has paper', hasPaperYes: 'Has paper', hasPaperNo: 'No paper',
+    englishOkay: 'English ordering available', orderEnglish: 'English',
+    bikesAvailable: 'Bikes available', returnDocks: 'Return docks', bikeUnavailable: 'Temporarily unavailable',
+    updated: 'Updated {time}{electric} · refreshes every minute',
+    lastUpdated: 'Last updated {time} · live refresh unavailable', savedBike: 'Saved availability · live feed unavailable',
+    electricBikes: ' · {count} e-bike(s)', liveBikeError: 'YouBike live data unavailable · showing saved stations',
+    sosName: 'Toilet paper SOS', sosSubtitle: 'Nearby toilets that are likely to have paper',
+    reportThanks: 'Thank you! +10 XP 🎉', reportRecorded: 'Recorded, thank you 🙏',
+    reportsMeta: '{count} reports · checked 2 hours ago',
+    filterVeg: 'Vegetarian', filterCheap: 'NT$ ~100', filterNear: '5 min', noMatches: 'Nothing matches', viewDetails: 'View details', close: 'Close',
+    distanceMetres: '{count} m away', phraseHint: 'Tap to show this phrase', translationUnavailable: 'Translation unavailable',
+    'description.building': 'Campus building', 'description.restaurant': 'Restaurant',
+    'description.bikeStation': 'YouBike station · {station}', 'description.entrance': 'Campus entrance', 'description.atm': 'Cash machine',
+    'diet.veg': 'Vegetarian', 'diet.vegan': 'Vegan', 'diet.ask': 'Halal? Ask', cash: 'Cash',
+    activityPrompt: 'Activity name?', activityExample: '🍜 Eat ramen together', activityCreated: 'Activity created! Waiting for people 🎉',
+    joined: '✓ Joined', full: 'Full', join: 'Join', by: 'by {name}', activityFull: 'This activity is full 😢',
+    joinSuccessFull: 'Joined! Now full 🎉 +20 XP', joinSuccess: 'Joined! +20 XP 🎉', activityLeft: 'Left the activity'
+  },
+  ja: {
+    appTitle: 'Freshman Map — {campus}', surviving: 'サバイバル中', language: '言語',
+    mapCanvas: 'インタラクティブ地図', toggleMapInfo: '地図情報の表示・非表示',
+    sosTitle: 'トイレットペーパー SOS', recenterTitle: '現在地に戻る',
+    foodTitle: 'グルメ', foodSubtitle: '中原夜市 · 正門のすぐ外',
+    buddySubtitle: '一人で食べず、仲間を見つけよう', newActivity: '新しいアクティビティ',
+    navMap: '地図', navFood: 'グルメ', navBuddy: '仲間',
+    'type.toilet': 'トイレ', 'type.water': '給水機', 'type.atm': 'ATM',
+    'type.food': 'グルメ', 'type.bike': 'U-Bike', 'type.gate': '入口',
+    paused: '休止中', away: '先', takeMe: 'ここへ行く', go: '行く',
+    hasPaper: 'トイレットペーパーあり', hasPaperYes: 'ペーパーあり', hasPaperNo: 'ペーパーなし',
+    englishOkay: '英語で注文可能', orderEnglish: '英語',
+    bikesAvailable: '貸出可能な自転車', returnDocks: '返却可能なドック', bikeUnavailable: '一時利用不可',
+    updated: '{time}更新{electric} · 1分ごとに更新',
+    lastUpdated: '最終更新 {time} · ライブ更新は利用不可', savedBike: '保存データを表示中 · ライブ接続なし',
+    electricBikes: ' · 電動アシスト {count}台', liveBikeError: 'YouBikeのライブデータを取得できません · 保存済みのステーションを表示中',
+    sosName: 'トイレットペーパー SOS', sosSubtitle: 'ペーパーがある可能性の高い近くのトイレ',
+    reportThanks: 'ありがとう！+10 XP 🎉', reportRecorded: '記録しました。ありがとう 🙏',
+    reportsMeta: '{count}件の報告 · 2時間前に確認',
+    filterVeg: 'ベジタリアン', filterCheap: 'NT$ ~100', filterNear: '5分', noMatches: '条件に合う店はありません', viewDetails: '詳細を見る', close: '閉じる',
+    distanceMetres: '{count} m先', phraseHint: 'タップしてこのフレーズを表示', translationUnavailable: '翻訳なし',
+    'description.building': 'キャンパス施設', 'description.restaurant': 'レストラン',
+    'description.bikeStation': 'YouBikeステーション · {station}', 'description.entrance': 'キャンパス入口', 'description.atm': 'ATM',
+    'diet.veg': 'ベジタリアン', 'diet.vegan': 'ヴィーガン', 'diet.ask': 'ハラール？要確認', cash: '現金',
+    activityPrompt: 'アクティビティ名は？', activityExample: '🍜 一緒にラーメン', activityCreated: '作成しました！参加者を待っています 🎉',
+    joined: '✓ 参加済み', full: '満員', join: '参加', by: '主催：{name}', activityFull: 'このアクティビティは満員です 😢',
+    joinSuccessFull: '参加しました！満員です 🎉 +20 XP', joinSuccess: '参加しました！+20 XP 🎉', activityLeft: '参加を取り消しました'
+  }
+}
+
+const localizedNames = {
+  'zh-Hant': {
+    lib: '張靜愚紀念圖書館', eng: '工學館', gym: '中原大學體育館',
+    act: '學生活動中心', zhen: '真知教學大樓', elec: '電學大樓',
+    f1: '中原夜市', f2: '素怡園素食自助餐', f3: '香知有素', f4: '得來素蔬食早午餐',
+    f5: '東興素食', f6: '馬來一哥', f7: '小肥大馬餐室', f8: '羅巴庫印尼烤麵包',
+    f9: '越南餐館', f10: '小泰國海南雞飯', f11: '老師傅牛肉麵', f12: '手工烤布蕭',
+    g1: '警衛室 · 校園正門', c1: '統一超商', c2: '統一超商',
+    '中原大學': '中原大學', '國立臺灣大學': '國立臺灣大學'
+  },
+  en: {
+    lib: 'Chang Ching Yu Memorial Library', eng: 'Engineering Building', gym: 'CYCU Gymnasium',
+    act: 'Student Activity Centre', zhen: 'Zhen Zhi Teaching Building', elec: 'Electrical Engineering Building',
+    f1: 'Zhongyuan Night Market', f2: 'Suyiyuan Vegetarian Buffet', f3: 'Xiang Zhi You Su',
+    f4: 'Delaishu Vegetarian Brunch', f5: 'Dongxing Vegetarian', f6: 'Malai Yige',
+    f7: 'Xiaofei Malaysian Café', f8: 'Robaku Indonesian Toast', f9: 'Vietnamese Restaurant',
+    f10: 'Little Thailand Hainan Chicken Rice', f11: 'Master Beef Noodles', f12: 'Handmade Crème Brûlée',
+    b1: 'Chung Yuan Christian University YouBike Station', b2: 'CYCU Civil Engineering YouBike Station',
+    b3: 'Huanzhong East Road and Shijian Road YouBike Station',
+    g1: 'Guard House · Main Gate', c1: '7-Eleven', c2: '7-Eleven',
+    '中原大學': 'Chung Yuan Christian University', '國立臺灣大學': 'National Taiwan University'
+  },
+  ja: {
+    lib: '張静愚記念図書館', eng: '工学館', gym: '中原大学体育館',
+    act: '学生活動センター', zhen: '真知教育棟', elec: '電学棟',
+    f1: '中原夜市', f2: '素怡園ベジタリアンビュッフェ', f3: '香知有素',
+    f4: '得來素ベジブランチ', f5: '東興ベジタリアン', f6: '馬來一哥（マレーシア料理）',
+    f7: '小肥大馬食堂', f8: 'ロバク・インドネシアントースト', f9: 'ベトナム料理',
+    f10: '小タイ海南チキンライス', f11: '老師傅牛肉麺', f12: '手作りクレームブリュレ',
+    b1: '中原大学YouBikeステーション', b2: '中原大学土木館YouBikeステーション',
+    b3: '環中東路・実践路YouBikeステーション',
+    g1: '警備室 · 正門', c1: 'セブン-イレブン', c2: 'セブン-イレブン',
+    'yb-500304004': '中原大学', 'yb-500304146': '中原大学土木館（中原池）',
+    'yb-500304078': '環中東路・実践路交差点',
+    '中原大學': '中原大学', '國立臺灣大學': '国立台湾大学'
+  }
+}
+
+const localizedDescriptions = {
+  'zh-Hant': {
+    f1: '夜市 · 就在校門口', f2: '素食自助餐', f3: '素食拉麵', f4: '素食早午餐',
+    f5: '素食餐廳', f6: '馬來西亞料理', f7: '馬來西亞咖啡室', f8: '印尼烤麵包',
+    f9: '越南料理', f10: '泰式與海南雞飯', f11: '牛肉麵', f12: '手工烤布蕭 · NT$35',
+    g1: '警衛室與校園正門', c1: '可使用國際卡的自動提款機', c2: '校園東側的自動提款機'
+  },
+  en: {
+    f1: 'Night market · right outside the campus gate', f2: 'Vegetarian buffet', f3: 'Vegetarian ramen', f4: 'Vegetarian brunch',
+    f5: 'Vegetarian restaurant', f6: 'Malaysian cuisine', f7: 'Malaysian coffee shop', f8: 'Indonesian toast',
+    f9: 'Vietnamese cuisine', f10: 'Thai and Hainan chicken rice', f11: 'Beef noodles', f12: 'Crème brûlée · NT$35',
+    g1: 'Guard house at the campus gate', c1: 'Cash machine accepting most international cards', c2: 'Cash machine on the east side of campus'
+  },
+  ja: {
+    f1: '夜市 · キャンパス正門のすぐ外', f2: 'ベジタリアンビュッフェ', f3: 'ベジタリアンラーメン', f4: 'ベジタリアンブランチ',
+    f5: 'ベジタリアンレストラン', f6: 'マレーシア料理', f7: 'マレーシア式喫茶店', f8: 'インドネシアントースト',
+    f9: 'ベトナム料理', f10: 'タイ料理と海南チキンライス', f11: '牛肉麺', f12: 'クレームブリュレ · NT$35',
+    g1: 'キャンパス正門の警備室', c1: '海外カード対応ATM', c2: 'キャンパス東側のATM'
+  }
+}
+
+const content = {
+  'zh-Hant': {
+    '無障礙 accessible': '無障礙', '外國卡？要確認 verify': '外國卡？要確認',
+    '自備衛生紙 BYO paper': '自備衛生紙', '火鍋 Hotpot': '火鍋', '羽球 Badminton': '羽球',
+    'YouBike 河濱 ride': 'YouBike 河濱騎行', '夜市巡禮 crawl': '夜市巡禮',
+    '今晚 19:00 tonight': '今晚 19:00', '明天 16:00 tomorrow': '明天 16:00',
+    '週六 07:30 Sat': '週六 07:30', '週五 20:00 Fri': '週五 20:00', '今晚 21:00 tonight': '今晚 21:00',
+    '今晚 tonight': '今晚'
+  },
+  en: {
+    '冰 / 溫': 'Cold / Warm', '冰 / 溫 / 熱': 'Cold / Warm / Hot', '男 / 女': 'Men / Women',
+    '無障礙 accessible': 'Accessible', '外國卡？要確認 verify': 'International cards? Please verify',
+    '自備衛生紙 BYO paper': 'Bring your own paper', '火鍋 Hotpot': 'Hotpot', '羽球 Badminton': 'Badminton',
+    'YouBike 河濱 ride': 'Riverside YouBike ride', '夜市巡禮 crawl': 'Night market crawl',
+    '中原夜市': 'Zhongyuan Night Market', '體育館': 'Gymnasium', '正門集合': 'Meet at the main gate',
+    '今晚 19:00 tonight': 'Tonight 19:00', '明天 16:00 tomorrow': 'Tomorrow 16:00',
+    '週六 07:30 Sat': 'Saturday 07:30', '週五 20:00 Fri': 'Friday 20:00', '今晚 21:00 tonight': 'Tonight 21:00',
+    '今晚 tonight': 'Tonight', '中壢 SOGO': 'Zhongli SOGO'
+  },
+  ja: {
+    '冰 / 溫': '冷水 / 温水', '冰 / 溫 / 熱': '冷水 / 温水 / 熱水', '男 / 女': '男性 / 女性',
+    '無障礙 accessible': 'バリアフリー', '外國卡？要確認 verify': '海外カードは要確認',
+    '自備衛生紙 BYO paper': 'トイレットペーパー持参',
+    '火鍋 Hotpot': '火鍋', '羽球 Badminton': 'バドミントン', 'YouBike 河濱 ride': 'YouBike河川敷ライド',
+    '夜市巡禮 crawl': '夜市めぐり', '中原夜市': '中原夜市', '體育館': '体育館',
+    '正門集合': '正門に集合', '中壢 SOGO': 'SOGO中壢店', '今晚 19:00 tonight': '今夜 19:00', '明天 16:00 tomorrow': '明日 16:00',
+    '週六 07:30 Sat': '土曜日 07:30', '週五 20:00 Fri': '金曜日 20:00', '今晚 21:00 tonight': '今夜 21:00', '今晚 tonight': '今夜',
+    '自習室外 · Outside study room': '自習室の外', '服務台後方 · Behind the desk': 'カウンターの後ろ',
+    '電梯旁 · Next to the lift': 'エレベーター横', '安靜區入口 · Quiet zone entry': 'サイレントエリア入口',
+    '大廳右側 · Right of the lobby': 'ロビー右側', '大廳入口 · By the entrance': 'ロビー入口',
+    '東側樓梯旁 · Near east stairs': '東階段の近く', '茶水間 · Pantry corner': '給湯室',
+    '走廊底 · End of corridor': '廊下の突き当たり', '球場旁 · Beside the courts': 'コート横',
+    '入口處 · At the entrance': '入口', '販賣機後面 · Behind vending machines': '自動販売機の後ろ',
+    '販賣機旁 · Next to vending machines': '自動販売機の横', '社團辦公室走廊 · Club office hallway': 'サークル事務室の廊下',
+    '樓梯間旁 · By the stairwell': '階段の近く', '走廊中段 · Middle of corridor': '廊下の中央',
+    '大廳角落 · Lobby corner': 'ロビーの隅', '電梯出來左轉 · Left out of the lift': 'エレベーターを出て左'
+  }
+}
+
+const sayJapanese = {
+  '這個怎麼賣？': 'これはいくらですか？', '我夾這些，白飯一碗，謝謝': 'これらとご飯を一杯ください',
+  '我要一碗素拉麵，謝謝': 'ベジタリアンラーメンを一杯ください', '一份素食鐵板麵，一杯豆漿紅茶': 'ベジ焼きそばと豆乳紅茶をください',
+  '我吃素，這個有蔥蒜嗎？': 'ベジタリアンです。ネギやニンニクは入っていますか？',
+  '請問這裡是清真的嗎？有豬肉嗎？': 'ここはハラールですか？豚肉は入っていますか？', '請問有沒有豬肉？': '豚肉は入っていますか？',
+  '一份烤麵包，謝謝': 'トーストを一つください', '一碗河粉，不要香菜': 'フォーを一杯、パクチーなしで',
+  '一份海南雞飯，不要辣': '海南チキンライスを一つ、辛くしないで', '一碗牛肉麵，不要香菜': '牛肉麺を一杯、パクチーなしで',
+  '三個一百，謝謝': '3つで100元、お願いします'
+}
+
+function savedLanguage() {
+  try {
+    const saved = localStorage.getItem('freshman-map-language')
+    if (LANGUAGES.includes(saved)) return saved
+  } catch {}
+  const preferred = globalThis.navigator?.language?.toLowerCase() || ''
+  return preferred.startsWith('ja') ? 'ja' : preferred.startsWith('en') ? 'en' : 'zh-Hant'
+}
+
+let language = savedLanguage()
+
+export const getLanguage = () => language
+
+export function t(key, vars = {}) {
+  const template = messages[language]?.[key] ?? messages[language]?.translationUnavailable ?? key
+  return template.replace(/\{(\w+)\}/g, (_, name) => vars[name] ?? '')
+}
+
+export function setLanguage(next) {
+  if (!LANGUAGES.includes(next) || next === language) return
+  language = next
+  try { localStorage.setItem('freshman-map-language', next) } catch {}
+  applyTranslations()
+  window.dispatchEvent(new CustomEvent('languagechange', { detail: { language } }))
+}
+
+export function applyTranslations(root = document) {
+  document.documentElement.lang = language
+  root.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n) })
+  root.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = t(el.dataset.i18nTitle) })
+  root.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)) })
+}
+
+export const onLanguageChange = fn => window.addEventListener('languagechange', fn)
+
+const entityKey = entity => entity.buildingId || entity.placeId || entity.name
+
+export function localName(entity) {
+  const translated = localizedNames[language]?.[entityKey(entity)]
+  if (translated) return translated
+  if (language === 'zh-Hant') return entity.name
+  if (language === 'en') return entity.en || t('translationUnavailable')
+  if (entity.type === 'bike') return t('description.bikeStation', { station: entity.stationNo || '' })
+  return entity.ja || t('translationUnavailable')
+}
+
+export function secondaryName(entity) {
+  const translated = localizedDescriptions[language]?.[entityKey(entity)]
+  if (translated) return translated
+  if (entity.buildingId) return t('description.building')
+  if (entity.type === 'food') return t('description.restaurant')
+  if (entity.type === 'bike') {
+    const station = entity.stationNo || entity.en?.match(/\d{9}/)?.[0] || ''
+    return t('description.bikeStation', { station })
+  }
+  if (entity.type === 'gate') return t('description.entrance')
+  if (entity.type === 'atm') return t('description.atm')
+  return ''
+}
+
+export function localText(value) {
+  if (!value) return value
+  if (content[language]?.[value]) return content[language][value]
+  const parts = value.split(' · ')
+  if (parts.length > 1) return language === 'zh-Hant' ? parts[0] : parts[parts.length - 1]
+  if (language === 'en' && /\p{Script=Han}/u.test(value)) return t('translationUnavailable')
+  return value
+}
+
+export function localPhrase(place) {
+  if (language === 'zh-Hant') return place.say
+  if (language === 'en') return place.sayEn
+  return sayJapanese[place.say] || t('translationUnavailable')
+}
+
+export const sayMeaning = () => t('phraseHint')
