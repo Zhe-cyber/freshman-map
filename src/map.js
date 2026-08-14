@@ -272,12 +272,8 @@ function openItem(itemId) {
   wire()
 }
 
-// HEIC does not render in any browser — show the placeholder rather than a
-// broken image icon, so an unconverted photo is visible as a gap to fix.
-const renderable = f => f && !/\.heic$/i.test(f)
-
 function photoBlock(i) {
-  return renderable(i.photo)
+  return i.photo
     ? `<img class="photo" src="photos/${encodeURIComponent(i.photo)}" alt="${html(localText(i.landmark))}" loading="lazy">`
     : `<div class="photo">📷 ${html(localText(i.landmark))}</div>`
 }

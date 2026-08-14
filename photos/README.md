@@ -1,24 +1,20 @@
 # Survey photos
 
-Drop the survey photos here using the exact names from the Drive folder:
+One JPEG per item, named `<itemId>.jpg` — e.g. `elec-3ftm.jpg` is the 3F men's
+toilet in 電學大樓. `src/data.js` references them by that name.
 
-    電學三樓（男）.jpg
-    篤信一樓飲水機.jpg
-    電學地下一樓（女）.jpg
+Named by id rather than by the Chinese survey filename so URLs need no
+encoding and the shell does not mangle them on Windows.
 
-`src/data.js` references them by filename, so the name must match exactly.
+## Adding more
 
-## Convert HEIC first
+1. Take the photo, name it by the survey convention (`電學三樓（男）.jpg`)
+2. `node tools/import-photos.js` gives you the itemId
+3. Save the photo here as `<itemId>.jpg`
 
-Browsers cannot display HEIC. These eight need converting to .jpg, and the
-filename in `src/data.js` updated to match:
-
-    電學七樓（女）.HEIC      電學七樓飲水機.HEIC
-    電學五樓（男）.HEIC      電學五樓飲水機.HEIC
-    電學八樓（男）.HEIC      電學八樓飲水機.HEIC
-    電學六樓飲水機.HEIC      電學四樓飲水機.HEIC
-
-Until then those items show the placeholder instead of a broken image.
+Some phone photos are HEIF even when named `.jpg`. Exporting through Google
+Drive's image endpoint transcodes them to real JPEG, which is how these were
+produced. Check with: `node -e "const b=require('fs').readFileSync('photos/x.jpg');console.log(b[0]===0xFF&&b[1]===0xD8)"`
 
 ## Later
 
