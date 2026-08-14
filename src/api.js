@@ -39,12 +39,17 @@ export async function createPlace(draft) {
     campusId,
     placeId: 'user-' + Date.now(),
     type: 'food',
-    icon: '⭐',
+    icon: draft.icon || '⭐',
     name: draft.name,
     en: draft.name,
+    address: draft.address || '',
     note: draft.note || '',
+    say: draft.say || '',
+    sayEn: '',
     lat: draft.lat, lng: draft.lng,
-    price: 1, diet: ['ask'], cash: true,
+    price: draft.price || 1,
+    diet: draft.diet?.length ? draft.diet : ['ask'],
+    cash: draft.cash !== false,
     yes: 1, no: 0,                     // the person who added it vouches for it
     addedByUser: true
   }

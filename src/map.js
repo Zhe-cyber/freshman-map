@@ -23,8 +23,8 @@ export async function initMap() {
     attributionControl: { compact: true },
     style: 'https://tiles.openfreemap.org/styles/bright'
   })
-  map.on('click', e => placing ? placeHere(e.lngLat) : closeSheet())
-  document.getElementById('addpin').onclick = () => setPlacing(!placing)
+  map.on('click', () => { if (!draftMarker) closeSheet() })
+  document.getElementById('addpin').onclick = startCreate
   map.on('style.load', applyMapLanguage)
   map.on('load', applyMapLanguage)
 
@@ -366,41 +366,109 @@ function wire(place) {
     window.open(e.currentTarget.dataset.zoom, '_blank'))
 }
 
-// --- tap the map to recommend a place -------------------------------------
-let placing = false
+// --- recommend a place ----------------------------------------------------
+// Position comes from a draggable pin, not an address: free geocoders put
+// CYCU's own street address in Keelung, 60km away. Dragging is also more
+// precise than a single tap, and the form stays open while you adjust.
+const ICONS = ['⭐', '🍜', '🍚', '🍢', '🍮', '🧋', '🍞', '🥗', '🍗', '🍲']
+const DIETS = [['veg', 'dietVeg'], ['vegan', 'dietVegan'], ['nopork', 'dietNoPork'], ['ask', 'dietAsk']]
 
-function setPlacing(on) {
-  placing = on
-  document.getElementById('tapbanner').hidden = !on
-  document.getElementById('addpin').classList.toggle('on', on)
-  document.getElementById('map').classList.toggle('placing', on)
-  if (on) closeSheet()
+let draftMarker = null
+
+function startCreate() {
+  if (draftMarker) return cancelCreate()
+  const c = map.getCenter()
+  const el = document.createElement('div')
+  el.className = 'pin draft'
+  el.innerHTML = `<div class="body"><div class="ptag" style="--dot:#ff8a3d">
+      <span class="pico">📍</span></div><div class="ptail"></div></div>`
+  draftMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', draggable: true })
+    .setLngLat(c).addTo(map)
+  draftMarker.on('drag', () => {
+    const { lng, lat } = draftMarker.getLngLat()
+    const out = document.getElementById('ap-coords')
+    if (out) out.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+  })
+  document.getElementById('addpin').classList.add('on')
+  openCreateForm()
 }
 
-function placeHere({ lng, lat }) {
-  setPlacing(false)
+function cancelCreate() {
+  draftMarker?.remove()
+  draftMarker = null
+  document.getElementById('addpin').classList.remove('on')
+  closeSheet()
+}
+
+function openCreateForm() {
+  const { lng, lat } = draftMarker.getLngLat()
   openSheet(`
     <div class="head">
       <div class="bulb" style="background:#ff8a3d22">⭐</div>
       <div><div class="name">${tr('addPlace')}</div>
-        <div class="sub">📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}</div></div>
+        <div class="sub">${tr('addPlaceDragHint')}</div></div>
     </div>
-    <div class="addbar">
-      <input id="ap-name" type="text" placeholder="${tr('addPlaceName')}" maxlength="60" autocomplete="off">
-      <input id="ap-note" type="text" placeholder="${tr('addPlaceNote')}" maxlength="80" autocomplete="off">
-    </div>
+
+    <div class="field"><label for="ap-name">${tr('addPlaceName')} *</label>
+      <input id="ap-name" type="text" maxlength="60" autocomplete="off"></div>
+
+    <div class="field"><label>${tr('addPlaceIcon')}</label>
+      <div class="picker" id="ap-icons">${ICONS.map((i, n) =>
+        `<button type="button" class="pick" data-icon="${i}" data-on="${n === 0 ? 1 : 0}">${i}</button>`).join('')}</div></div>
+
+    <div class="field"><label>${tr('addPlaceDiet')}</label>
+      <div class="picker" id="ap-diet">${DIETS.map(([k, key]) =>
+        `<button type="button" class="pick wide" data-diet="${k}" data-on="0">${tr(key)}</button>`).join('')}</div></div>
+
+    <div class="field"><label>${tr('addPlacePrice')}</label>
+      <div class="picker" id="ap-price">${[1, 2, 3].map(n =>
+        `<button type="button" class="pick wide" data-price="${n}" data-on="${n === 1 ? 1 : 0}">${'$'.repeat(n)}</button>`).join('')}</div></div>
+
+    <div class="field"><label for="ap-note">${tr('addPlaceNote')}</label>
+      <input id="ap-note" type="text" maxlength="80" autocomplete="off"></div>
+
+    <div class="field"><label for="ap-say">${tr('addPlaceSay')}</label>
+      <input id="ap-say" type="text" maxlength="80" autocomplete="off" placeholder="一碗牛肉麵，不要香菜"></div>
+
+    <div class="field"><label for="ap-addr">${tr('addPlaceAddress')}</label>
+      <input id="ap-addr" type="text" maxlength="90" autocomplete="off"></div>
+
+    <div class="coords">📍 <span id="ap-coords">${lat.toFixed(5)}, ${lng.toFixed(5)}</span></div>
+
     <div class="actions">
       <button class="btn ghost" data-ap-cancel>${tr('cancel')}</button>
       <button class="btn go" data-ap-save>${tr('addPlaceSave')}</button>
     </div>`)
 
   const sheet = document.getElementById('sheet')
-  sheet.querySelector('#ap-name').focus()
-  sheet.querySelector('[data-ap-cancel]').onclick = closeSheet
+  const pickOne = (id, attr) => sheet.querySelector(id).onclick = e => {
+    const b = e.target.closest('[data-' + attr + ']'); if (!b) return
+    sheet.querySelectorAll(`#${id.slice(1)} .pick`).forEach(x => x.dataset.on = '0')
+    b.dataset.on = '1'
+  }
+  pickOne('#ap-icons', 'icon'); pickOne('#ap-price', 'price')
+  sheet.querySelector('#ap-diet').onclick = e => {          // diet is multi-select
+    const b = e.target.closest('[data-diet]'); if (!b) return
+    b.dataset.on = b.dataset.on === '1' ? '0' : '1'
+  }
+
+  sheet.querySelector('[data-ap-cancel]').onclick = cancelCreate
   sheet.querySelector('[data-ap-save]').onclick = async () => {
     const name = sheet.querySelector('#ap-name').value.trim()
     if (!name) return toast(tr('addPlaceNeedName'))
-    const place = await createPlace({ name, note: sheet.querySelector('#ap-note').value.trim(), lat, lng })
+    const pos = draftMarker.getLngLat()
+    const place = await createPlace({
+      name,
+      icon: sheet.querySelector('#ap-icons [data-on="1"]').dataset.icon,
+      price: +sheet.querySelector('#ap-price [data-on="1"]').dataset.price,
+      diet: [...sheet.querySelectorAll('#ap-diet [data-on="1"]')].map(b => b.dataset.diet),
+      note: sheet.querySelector('#ap-note').value.trim(),
+      say: sheet.querySelector('#ap-say').value.trim(),
+      address: sheet.querySelector('#ap-addr').value.trim(),
+      lat: pos.lat, lng: pos.lng
+    })
+    draftMarker.remove(); draftMarker = null
+    document.getElementById('addpin').classList.remove('on')
     places.push(place)
     addPlacePin(place)
     closeSheet()
