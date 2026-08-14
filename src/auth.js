@@ -28,12 +28,19 @@ function save(session) {
   return session
 }
 
+// JWT payloads are base64url and often unpadded; some browsers' atob is
+// stricter than others about that, so pad before decoding.
+function decodeSegment(seg) {
+  const b64 = seg.replace(/-/g, '+').replace(/_/g, '/')
+  return JSON.parse(atob(b64 + '='.repeat((4 - b64.length % 4) % 4)))
+}
+
 export function currentUser() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY))
     if (!s?.idToken) return null
     // The id token is a JWT; its payload carries sub and the name we set.
-    const claims = JSON.parse(atob(s.idToken.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    const claims = decodeSegment(s.idToken.split('.')[1])
     if (claims.exp * 1000 < Date.now()) return { ...s, expired: true }
     return { userId: claims.sub, name: claims.name || s.username, username: s.username }
   } catch { return null }
