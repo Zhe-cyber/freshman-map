@@ -112,11 +112,15 @@ function renderLanguage() {
 // OpenFreeMap uses OpenStreetMap vector labels, unlike raster tiles whose text
 // is baked into an image. Only name-based layers are changed: route numbers,
 // road shields and icons keep the style's original expressions.
+// Every chain MUST end in `name` (the local Traditional Chinese). Only 16% of
+// features around CYCU carry name:en and 0.3% carry name:ja, so without that
+// last fallback most labels render blank — worse than showing Chinese, and in
+// Japanese it empties the map. Measured against Overpass over the campus bbox.
 const mapNameFields = {
   // Both campuses are in Taiwan, so the local `name` is Traditional Chinese.
   'zh-Hant': ['name:zh-Hant', 'name:zh-TW', 'name', 'name:nonlatin', 'name:zh'],
-  en: ['name:en', 'name_en', 'name:latin'],
-  ja: ['name:ja', 'name_ja']
+  en: ['name:en', 'name_en', 'name:latin', 'name'],
+  ja: ['name:ja', 'name_ja', 'name:latin', 'name']
 }
 
 function applyMapLanguage() {
