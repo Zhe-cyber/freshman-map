@@ -371,7 +371,7 @@ let placing = false
 
 function setPlacing(on) {
   placing = on
-  document.getElementById('placing').hidden = !on
+  document.getElementById('tapbanner').hidden = !on
   document.getElementById('addpin').classList.toggle('on', on)
   document.getElementById('map').classList.toggle('placing', on)
   if (on) closeSheet()
