@@ -1,4 +1,6 @@
-# 新生包 — CYCU Freshman Map
+# Freshman Map 新生包
+
+CYCU · 中原大學
 
 Helps new students at 中原大學 adapt in days instead of weeks.
 Toilets (and whether they have paper), food you can actually order, and people to eat with.

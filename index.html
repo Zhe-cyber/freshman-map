@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <meta name="theme-color" content="#16302a" />
-<title>新生包 — CYCU</title>
+<title>Freshman Map — CYCU</title>
 <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet" />
 <link href="./styles.css" rel="stylesheet" />
@@ -57,7 +57,7 @@
   import { initBuddy } from './src/buddy.js'
   import { campus, usingMock } from './src/api.js'
 
-  document.title = `新生包 — ${campus.name}`
+  document.title = `Freshman Map — ${campus.name}`
 
   document.querySelectorAll('.nav button').forEach(b => b.onclick = () => {
     document.querySelectorAll('.nav button').forEach(x => x.classList.remove('on'))
@@ -68,7 +68,7 @@
   })
 
   initMap(); initFood(); initBuddy()
-  if (usingMock) console.info('[新生包] mock mode — set API_BASE in src/api.js when CLOUD deploys')
+  if (usingMock) console.info('[Freshman Map] mock mode — set API_BASE in src/api.js when CLOUD deploys')
 </script>
 </body>
 </html>
