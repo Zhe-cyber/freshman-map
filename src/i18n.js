@@ -9,7 +9,7 @@ const messages = {
     buddySubtitle: '一個人不好吃飯 · 找人一起吧', newActivity: '開一個新活動',
     navMap: '地圖', navFood: '美食', navBuddy: '夥伴',
     'type.toilet': '廁所', 'type.water': '飲水機', 'type.atm': 'ATM',
-    'type.food': '美食', 'type.bike': 'U-Bike', 'type.gate': '校門',
+    'type.food': '美食', 'type.bike': 'U-Bike', 'type.vending': '販賣機', 'type.gate': '校門',
     paused: '暫停', away: '公尺', takeMe: '帶我去', go: '帶我去',
     hasPaper: '有衛生紙', hasPaperYes: '有紙', hasPaperNo: '沒紙',
     cancel: '取消',
@@ -56,7 +56,7 @@ const messages = {
     buddySubtitle: "Don't eat alone · find some company", newActivity: 'Create activity',
     navMap: 'Map', navFood: 'Food', navBuddy: 'BuddyUp',
     'type.toilet': 'Toilet', 'type.water': 'Water', 'type.atm': 'ATM',
-    'type.food': 'Food', 'type.bike': 'U-Bike', 'type.gate': 'Entrance',
+    'type.food': 'Food', 'type.bike': 'U-Bike', 'type.vending': 'Vending', 'type.gate': 'Entrance',
     paused: 'Paused', away: 'away', takeMe: 'Take me there', go: 'Go',
     hasPaper: 'Has paper', hasPaperYes: 'Has paper', hasPaperNo: 'No paper',
     cancel: 'Cancel',
@@ -102,7 +102,7 @@ const messages = {
     buddySubtitle: '一人で食べず、仲間を見つけよう', newActivity: '新しいアクティビティ',
     navMap: '地図', navFood: 'グルメ', navBuddy: '仲間',
     'type.toilet': 'トイレ', 'type.water': '給水機', 'type.atm': 'ATM',
-    'type.food': 'グルメ', 'type.bike': 'U-Bike', 'type.gate': '入口',
+    'type.food': 'グルメ', 'type.bike': 'U-Bike', 'type.vending': '自動販売機', 'type.gate': '入口',
     paused: '休止中', away: '先', takeMe: 'ここへ行く', go: '行く',
     hasPaper: 'トイレットペーパーあり', hasPaperYes: 'ペーパーあり', hasPaperNo: 'ペーパーなし',
     cancel: 'キャンセル',
@@ -145,7 +145,7 @@ const messages = {
 const localizedNames = {
   'zh-Hant': {
     lib: '張靜愚紀念圖書館', eng: '工學館', gym: '中原大學體育館',
-    act: '學生活動中心', zhen: '真知教學大樓', elec: '電學大樓',
+    act: '學生活動中心', zhen: '真知教學大樓', elec: '電學大樓', duxin: '篤信大樓', huaien: '懷恩樓',
     f1: '中原夜市', f2: '素怡園素食自助餐', f3: '香知有素', f4: '得來素蔬食早午餐',
     f5: '東興素食', f6: '馬來一哥', f7: '小肥大馬餐室', f8: '羅巴庫印尼烤麵包',
     f9: '越南餐館', f10: '小泰國海南雞飯', f11: '老師傅牛肉麵', f12: '手工烤布蕭',
@@ -155,6 +155,7 @@ const localizedNames = {
   en: {
     lib: 'Chang Ching Yu Memorial Library', eng: 'Engineering Building', gym: 'CYCU Gymnasium',
     act: 'Student Activity Centre', zhen: 'Zhen Zhi Teaching Building', elec: 'Electrical Engineering Building',
+    duxin: 'Duxin Building', huaien: 'Huai-En Building',
     f1: 'Zhongyuan Night Market', f2: 'Suyiyuan Vegetarian Buffet', f3: 'Xiang Zhi You Su',
     f4: 'Delaishu Vegetarian Brunch', f5: 'Dongxing Vegetarian', f6: 'Malai Yige',
     f7: 'Xiaofei Malaysian Café', f8: 'Robaku Indonesian Toast', f9: 'Vietnamese Restaurant',
@@ -166,7 +167,7 @@ const localizedNames = {
   },
   ja: {
     lib: '張静愚記念図書館', eng: '工学館', gym: '中原大学体育館',
-    act: '学生活動センター', zhen: '真知教育棟', elec: '電学棟',
+    act: '学生活動センター', zhen: '真知教育棟', elec: '電学棟', duxin: '篤信棟', huaien: '懐恩楼',
     f1: '中原夜市', f2: '素怡園ベジタリアンビュッフェ', f3: '香知有素',
     f4: '得來素ベジブランチ', f5: '東興ベジタリアン', f6: '馬來一哥（マレーシア料理）',
     f7: '小肥大馬食堂', f8: 'ロバク・インドネシアントースト', f9: 'ベトナム料理',
@@ -236,7 +237,17 @@ const content = {
     '入口處 · At the entrance': '入口', '販賣機後面 · Behind vending machines': '自動販売機の後ろ',
     '販賣機旁 · Next to vending machines': '自動販売機の横', '社團辦公室走廊 · Club office hallway': 'サークル事務室の廊下',
     '樓梯間旁 · By the stairwell': '階段の近く', '走廊中段 · Middle of corridor': '廊下の中央',
-    '大廳角落 · Lobby corner': 'ロビーの隅', '電梯出來左轉 · Left out of the lift': 'エレベーターを出て左'
+    '大廳角落 · Lobby corner': 'ロビーの隅', '電梯出來左轉 · Left out of the lift': 'エレベーターを出て左',
+    '廁所入口 · Toilet entrance': 'トイレ入口',
+    '走廊飲水機 · Corridor water dispenser': '廊下の給水機',
+    '樓層販賣機 · Floor vending machine': 'フロアの自動販売機',
+    '一樓販賣機 · First-floor vending machine': '1階の自動販売機',
+    '建築外側 · Outside the building': '建物の外側',
+    '女廁 · Women\'s toilet': '女性用トイレ', '男廁 · Men\'s toilet': '男性用トイレ',
+    '廁所 · Toilet': 'トイレ', '飲水機 · Water dispenser': '給水機',
+    '飲水機 1 · Water dispenser 1': '給水機 1', '飲水機 2 · Water dispenser 2': '給水機 2',
+    '販賣機 · Vending machine': '自動販売機',
+    '販賣機 1 · Vending machine 1': '自動販売機 1', '販賣機 2 · Vending machine 2': '自動販売機 2'
   }
 }
 

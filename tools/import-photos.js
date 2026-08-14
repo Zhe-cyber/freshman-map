@@ -19,6 +19,9 @@ import { readdirSync, readFileSync } from 'node:fs'
 const BUILDINGS = {
   電學: { id: 'elec', name: '電學大樓', en: 'Electrical Engineering Building', lat: 24.955929, lng: 121.242519 },
   篤信: { id: 'duxin', name: '篤信大樓', en: 'Duxin Building',                  lat: 24.956206, lng: 121.242582 },
+  教學: { id: 'zhen', name: '真知教學大樓', en: 'Zhen Zhi Teaching Building',   lat: 24.956049, lng: 121.241868 },
+  懷恩: { id: 'huaien', name: '懷恩樓', en: 'Huai-En Building',                 lat: 24.957792, lng: 121.240757 },
+  活中: { id: 'act', name: '學生活動中心', en: 'Student Activity Centre',        lat: 24.958939, lng: 121.240933 },
   工學: { id: 'eng',   name: '工學館',   en: 'Engineering Building',            lat: 24.957285, lng: 121.244358 },
   圖書: { id: 'lib',   name: '張靜愚紀念圖書館', en: 'Library',                 lat: 24.958309, lng: 121.240707 }
 }
@@ -27,9 +30,11 @@ const DIGITS = { 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8,
 
 const FACILITIES = [
   { match: /飲水機/,  type: 'water',  note: '飲水機 water dispenser', suffix: 'w' },
+  { match: /販賣機/,  type: 'vending', note: '販賣機 vending machine', suffix: 'v' },
   { match: /（男）|\(男\)/, type: 'toilet', note: '男 men',           suffix: 'tm' },
   { match: /（女）|\(女\)/, type: 'toilet', note: '女 women',         suffix: 'tf' },
-  { match: /無障礙/,  type: 'toilet', note: '無障礙 accessible',      suffix: 'ta' }
+  { match: /無障礙/,  type: 'toilet', note: '無障礙 accessible',      suffix: 'ta' },
+  { match: /廁所/,    type: 'toilet', note: '廁所 toilet',             suffix: 't' }
 ]
 
 function parseFloor(stem) {
@@ -39,6 +44,7 @@ function parseFloor(stem) {
   if (above) return DIGITS[above[1]] + 'F'
   const digits = stem.match(/(?:^|[^\d])(\d{1,2})\s*[F樓]/i)
   if (digits) return digits[1] + 'F'
+  if (/外面|販賣機/.test(stem)) return '1F'
   return null
 }
 
@@ -54,9 +60,13 @@ function parseFilename(filename) {
   if (!facility) return { error: 'not a toilet or water dispenser', filename }
 
   const b = BUILDINGS[key]
+  const sourceNumber = stem.match(/(?:飲水機|販賣機)(\d+)/)?.[1]
+  const numbered = facility.type === 'vending' || ['zhen', 'huaien'].includes(b.id)
+  const instance = sourceNumber || (numbered && ['water', 'vending'].includes(facility.type) ? '1' : '')
+  const outside = /外面/.test(stem) ? 'out' : floor.toLowerCase()
   return {
     building: b,
-    itemId: `${b.id}-${floor.toLowerCase()}${facility.suffix}`,
+    itemId: `${b.id}-${outside}${facility.suffix}${instance}`,
     floor,
     type: facility.type,
     note: facility.note,
@@ -88,7 +98,7 @@ function main() {
       a.itemId.localeCompare(b.itemId))
     .forEach(p =>
       console.log(`  I('${p.itemId}', '${p.building.id}', '${p.floor}', '${p.type}', ` +
-        `'TODO landmark', '${p.note}'${p.type === 'toilet' ? ', 0, 0' : ''}),`))
+        `'TODO landmark', '${p.note}', null, '${p.itemId}.jpg'),`))
 
   console.error(`\n${ok.length} parsed, ${bad.length} skipped`)
   bad.forEach(b => console.error(`  SKIPPED (${b.error}): ${b.filename}`))
