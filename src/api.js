@@ -19,8 +19,10 @@ export const campus = CAMPUSES[campusId] || CAMPUSES.cycu
 // it does not need them to prove it. A device id plus a name they type once
 // covers every screen we have. Cognito can replace this later without any
 // caller changing: keep returning { userId, name }.
+import { currentUser } from './auth.js'
+
 const ID_KEY = 'freshmanmap.user'
-export const user = (() => {
+const deviceUser = (() => {
   try {
     const saved = JSON.parse(localStorage.getItem(ID_KEY))
     if (saved?.userId) return saved
@@ -30,10 +32,14 @@ export const user = (() => {
   return fresh
 })()
 
+// A signed-in Cognito user wins; otherwise the device identity keeps the app
+// usable for anyone who skipped the login gate.
+export const user = currentUser() || deviceUser
+
 export function setUserName(name) {
-  user.name = name.trim()
-  localStorage.setItem(ID_KEY, JSON.stringify(user))
-  return user
+  deviceUser.name = name.trim()
+  localStorage.setItem(ID_KEY, JSON.stringify(deviceUser))
+  return deviceUser
 }
 
 // Where the user is. Real GPS overwrites this via watchMe().

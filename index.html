@@ -47,6 +47,7 @@
   </div>
 </div>
 
+<div class="login" id="login" hidden></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
 
@@ -62,6 +63,7 @@
   import { initFood } from './src/food.js'
   import { initBuddy } from './src/buddy.js'
   import { campus, usingMock } from './src/api.js'
+  import { initLogin, wireSignOut } from './src/login.js'
   import { applyTranslations, getLanguage, localName, onLanguageChange, setLanguage, t } from './src/i18n.js'
   import { closeSheet } from './src/ui.js'
 
@@ -84,7 +86,9 @@
     if (b.dataset.screen === 's-map') setTimeout(resizeMap, 50)
   })
 
+  initLogin()
   initMap(); initFood(); initBuddy()
+  wireSignOut()
   if (usingMock) console.info('[Freshman Map] mock mode — set API_BASE in src/api.js when CLOUD deploys')
 </script>
 </body>
