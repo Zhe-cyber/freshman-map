@@ -86,7 +86,7 @@
     if (b.dataset.screen === 's-map') setTimeout(resizeMap, 50)
   })
 
-  initLogin()
+  await initLogin()
   initMap(); initFood(); initBuddy()
   wireSignOut()
   if (usingMock) console.info('[Freshman Map] mock mode — set API_BASE in src/api.js when CLOUD deploys')

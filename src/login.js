@@ -2,16 +2,29 @@
 // On success we reload rather than plumb reactive auth state through every
 // module — the app reads `user` from api.js once at start-up.
 
-import { signIn, signUp, isSignedIn, signOut, currentUser, readableError } from './auth.js'
+import { signIn, signUp, isSignedIn, signOut, currentUser, refresh, readableError } from './auth.js'
 import { t } from './i18n.js'
 
 let mode = 'in'          // 'in' | 'up'
 
-export function initLogin() {
+export async function initLogin() {
   const gate = document.getElementById('login')
+
+  // Cognito id tokens last an hour. Without this the gate slams over the whole
+  // app the moment one expires, which looks like the app has gone blank.
+  // The refresh token is good for 30 days, so renew silently and stay in.
+  if (!isSignedIn() && currentUser()?.expired) await refresh()
+
   if (isSignedIn()) { gate.hidden = true; return }
   gate.hidden = false
-  render()
+  try {
+    render()
+  } catch (err) {
+    // Never leave an empty full-screen overlay: falling through to the app
+    // beats a blank page, since the device identity still works.
+    console.error('[Freshman Map] login failed to render', err)
+    gate.hidden = true
+  }
 }
 
 function render() {
