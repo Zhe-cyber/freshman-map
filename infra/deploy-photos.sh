@@ -33,7 +33,10 @@ aws s3api put-public-access-block --bucket "$BUCKET" \
   "BlockPublicAcls=false,IgnorePublicAcls=false,BlockPublicPolicy=false,RestrictPublicBuckets=false" \
   --region "$REGION" >/dev/null
 
-cat > /tmp/fm-policy.json <<POLICY
+# Relative path, not /tmp: the AWS CLI on Windows is a native binary and
+# cannot read Git Bash paths.
+mkdir -p infra/.build
+cat > infra/.build/policy.json <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [{
@@ -45,18 +48,18 @@ cat > /tmp/fm-policy.json <<POLICY
   }]
 }
 POLICY
-aws s3api put-bucket-policy --bucket "$BUCKET" --policy file:///tmp/fm-policy.json --region "$REGION"
-rm -f /tmp/fm-policy.json
+aws s3api put-bucket-policy --bucket "$BUCKET" --policy file://infra/.build/policy.json --region "$REGION"
+
 echo "    readable"
 
 echo "==> CORS"
 # The app fetches these from a different origin than the bucket.
-cat > /tmp/fm-cors.json <<'CORS'
+cat > infra/.build/cors.json <<'CORS'
 {"CORSRules":[{"AllowedHeaders":["*"],"AllowedMethods":["GET","HEAD"],
   "AllowedOrigins":["*"],"MaxAgeSeconds":86400}]}
 CORS
-aws s3api put-bucket-cors --bucket "$BUCKET" --cors-configuration file:///tmp/fm-cors.json --region "$REGION"
-rm -f /tmp/fm-cors.json
+aws s3api put-bucket-cors --bucket "$BUCKET" --cors-configuration file://infra/.build/cors.json --region "$REGION"
+rm -rf infra/.build
 echo "    set"
 
 echo "==> uploading $(ls photos/*.jpg 2>/dev/null | wc -l) photos"

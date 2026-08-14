@@ -18,7 +18,7 @@ export const campus = CAMPUSES[campusId] || CAMPUSES.cycu
 // Where the survey photos live. 'photos/' serves them out of the repo; after
 // infra/deploy-photos.sh, point this at the bucket. data.js keeps storing bare
 // filenames either way, so switching costs one line and no records change.
-const PHOTO_BASE = 'photos/'
+const PHOTO_BASE = 'https://freshmanmap-photos-875892081290.s3.us-east-1.amazonaws.com/'
 export const photoUrl = file => file ? PHOTO_BASE + encodeURIComponent(file) : null
 
 // Identity, not authentication. BuddyUp needs to know which person joined —
