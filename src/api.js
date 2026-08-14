@@ -15,6 +15,27 @@ export const CAMPUSES = {
 }
 export const campus = CAMPUSES[campusId] || CAMPUSES.cycu
 
+// Identity, not authentication. BuddyUp needs to know which person joined —
+// it does not need them to prove it. A device id plus a name they type once
+// covers every screen we have. Cognito can replace this later without any
+// caller changing: keep returning { userId, name }.
+const ID_KEY = 'freshmanmap.user'
+export const user = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(ID_KEY))
+    if (saved?.userId) return saved
+  } catch {}
+  const fresh = { userId: 'u-' + crypto.randomUUID().slice(0, 8), name: '' }
+  localStorage.setItem(ID_KEY, JSON.stringify(fresh))
+  return fresh
+})()
+
+export function setUserName(name) {
+  user.name = name.trim()
+  localStorage.setItem(ID_KEY, JSON.stringify(user))
+  return user
+}
+
 // Where the user is. Real GPS overwrites this via watchMe().
 export const me = { lat: 24.9563, lng: 121.2418 }
 
