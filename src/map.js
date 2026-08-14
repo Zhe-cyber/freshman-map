@@ -274,7 +274,8 @@ function openItem(itemId) {
 
 function photoBlock(i) {
   return i.photo
-    ? `<img class="photo" src="photos/${encodeURIComponent(i.photo)}" alt="${html(localText(i.landmark))}" loading="lazy">`
+    ? `<img class="photo" src="photos/${encodeURIComponent(i.photo)}" alt="${html(localText(i.landmark))}"
+           loading="lazy" data-zoom="photos/${encodeURIComponent(i.photo)}">`
     : `<div class="photo">📷 ${html(localText(i.landmark))}</div>`
 }
 
@@ -359,6 +360,9 @@ function wire(place) {
     const target = place || curB
     navTo(target.lat, target.lng)
   })
+  // Tap the photo for the full-size original — the sheet caps it at 38vh.
+  s.querySelector('[data-zoom]')?.addEventListener('click', e =>
+    window.open(e.currentTarget.dataset.zoom, '_blank'))
 }
 
 export const resizeMap = () => map?.resize()
