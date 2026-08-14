@@ -1,8 +1,8 @@
 // OWNER: A — map screen only. Nobody else edits this file.
 import { TYPES } from './data.js'
 import {
-  campus, me, getBuildings, getPlaces, loadItems, itemsIn, findItem, reportItem,
-  getYouBikeStations, metres, floorOrder, score, tone, toneText, navTo, watchMe
+  campus, me, getBuildings, getPlaces, loadItems, itemsIn, findItem,
+  getYouBikeStations, metres, floorOrder, navTo, watchMe
 } from './api.js'
 import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
 import { localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
@@ -235,8 +235,9 @@ export function openBuilding(b, move = true) {
   const floors = Object.keys(byFloor).sort((x, y) => floorOrder(x) - floorOrder(y)).map(f => `
     <div class="floor"><div class="flabel">${f}</div>${byFloor[f].map(i => {
       const t = TYPES[i.type]
-      const pill = i.reliability
-        ? `<span class="pill" style="background:${tone(score(i.reliability))}22;color:${toneText(score(i.reliability))}">${Math.round(score(i.reliability) / 10)}/10</span>` : ''
+      const pill = i.type !== 'toilet' || i.paper === null ? ''
+        : i.paper ? `<span class="pill paper-yes">🧻</span>`
+                  : `<span class="pill paper-no">🚫</span>`
       return `<div class="item" data-item="${i.itemId}">
         <div class="ic" style="background:${t.color}22">${t.icon}</div>
         <div><div class="tt">${html(tr(`type.${i.type}`))}</div><div class="ss">${html(localText(i.landmark))}</div></div>
@@ -265,13 +266,28 @@ function openItem(itemId) {
       <div class="bulb" style="background:${t.color}22">${t.icon}</div>
       <div><div class="name">${tr(`type.${i.type}`)} · ${i.floor}</div><div class="sub">${html(localName(curB))} · ${html(localText(i.note))}</div></div>
     </div>
-    <div class="photo">📷 ${html(localText(i.landmark))}</div>
-    ${i.reliability ? scoreBar(tr('hasPaper'), i.reliability) +
-      `<div class="actions">
-         <button class="btn yes" data-report="1">${tr('hasPaperYes')}</button>
-         <button class="btn no" data-report="0">${tr('hasPaperNo')}</button></div>` : ''}
+    ${photoBlock(i)}
+    ${i.type === 'toilet' ? paperBlock(i.paper) : ''}
     <div class="actions"><button class="btn go" data-nav>🧭 ${tr('go')}</button></div>`)
   wire()
+}
+
+// HEIC does not render in any browser — show the placeholder rather than a
+// broken image icon, so an unconverted photo is visible as a gap to fix.
+const renderable = f => f && !/\.heic$/i.test(f)
+
+function photoBlock(i) {
+  return renderable(i.photo)
+    ? `<img class="photo" src="photos/${encodeURIComponent(i.photo)}" alt="${html(localText(i.landmark))}" loading="lazy">`
+    : `<div class="photo">📷 ${html(localText(i.landmark))}</div>`
+}
+
+// We state whether paper is provided. We do not track it live.
+function paperBlock(paper) {
+  if (paper === null) return `<div class="fact unknown">❓ ${tr('paperUnknown')}</div>`
+  return paper
+    ? `<div class="fact yes">🧻 ${tr('paperYes')}</div>`
+    : `<div class="fact no">🚫 ${tr('paperNo')}</div>`
 }
 
 function openPlace(p, move = true) {
@@ -315,22 +331,22 @@ function openPlace(p, move = true) {
 // 衛生紙 SOS — skips the map entirely. Best-scoring toilets first, then nearest.
 function sos() {
   const all = buildings.flatMap(b =>
-    itemsIn(b.buildingId).filter(i => i.type === 'toilet' && i.reliability)
-      .map(i => ({ b, i, d: metres(me, b), p: score(i.reliability) })))
-    .filter(x => x.p >= 50)
-    .sort((x, y) => y.p - x.p || x.d - y.d)
-    .slice(0, 4)
+    itemsIn(b.buildingId).filter(i => i.type === 'toilet' && i.paper === true)
+      .map(i => ({ b, i, d: metres(me, b) })))
+    .sort((x, y) => x.d - y.d)
+    .slice(0, 5)
 
   openSheet(`
     <div class="head"><div class="bulb" style="background:#ffdede">🧻</div>
       <div><div class="name">${tr('sosName')}</div><div class="sub">${tr('sosSubtitle')}</div></div></div>
-    ${all.map(x => `<div class="item" data-sos="${x.b.buildingId}|${x.i.itemId}">
+    ${all.length ? all.map(x => `<div class="item" data-sos="${x.b.buildingId}|${x.i.itemId}">
       <div class="ic" style="background:#34c98b22">🧻</div>
       <div><div class="tt">${html(localName(x.b))} · ${x.i.floor}</div><div class="ss">${html(localText(x.i.landmark))}</div></div>
-      <span class="pill" style="background:${tone(x.p)}22;color:${toneText(x.p)}">${Math.round(x.p / 10)}/10</span>
-      <span class="chev">${tr('distanceMetres', { count: x.d })} ›</span></div>`).join('')}`)
+      <span class="chev">${tr('distanceMetres', { count: x.d })} ›</span></div>`).join('')
+      : `<div class="fact unknown">❓ ${tr('paperNoneKnown')}</div>`}`)
   wire()
 }
+
 
 // One delegated wiring pass per sheet render. Cheaper than tracking listeners.
 function wire(place) {
@@ -342,12 +358,6 @@ function wire(place) {
     const [bid, iid] = el.dataset.sos.split('|')
     curB = buildings.find(b => b.buildingId === bid)
     openItem(iid)
-  })
-  s.querySelectorAll('[data-report]').forEach(el => el.onclick = async () => {
-    const ok = el.dataset.report === '1'
-    await reportItem(curI.itemId, ok)
-    openItem(curI.itemId)
-    toast(ok ? tr('reportThanks') : tr('reportRecorded'))
   })
   s.querySelector('[data-nav]')?.addEventListener('click', () => {
     const target = place || curB

@@ -1,6 +1,6 @@
 // OWNER: B — 美食 screen only.
 import { DIET } from './data.js'
-import { getPlaces, me, metres, score, tone, toneText, navTo } from './api.js'
+import { getPlaces, createPlace, me, metres, score, tone, toneText, navTo } from './api.js'
 import { closeSheet, openSheet, scoreBar, toast } from './ui.js'
 import { localName, localPhrase, onLanguageChange, sayMeaning, secondaryName, t } from './i18n.js'
 
@@ -35,7 +35,30 @@ export async function initFood() {
     await render()
     if (reopen) openFoodDetails(currentFood)
   })
+  buildAddForm()
   render()
+}
+
+// Adds at the user's current position — they are standing at the place they
+// are recommending. No map-tap picker, no address lookup.
+function buildAddForm() {
+  const box = document.getElementById('addplace')
+  if (!box) return
+  box.innerHTML = `
+    <input id="ap-name" type="text" placeholder="${t('addPlaceName')}" maxlength="60" autocomplete="off">
+    <input id="ap-note" type="text" placeholder="${t('addPlaceNote')}" maxlength="80" autocomplete="off">
+    <span class="hint">📍 ${t('addPlaceHere')}</span>
+    <button class="btn go" id="ap-save">${t('addPlaceSave')}</button>`
+
+  document.getElementById('ap-save').onclick = async () => {
+    const name = document.getElementById('ap-name').value.trim()
+    if (!name) return toast(t('addPlaceNeedName'))
+    await createPlace({ name, note: document.getElementById('ap-note').value.trim(), lat: me.lat, lng: me.lng })
+    document.getElementById('ap-name').value = ''
+    document.getElementById('ap-note').value = ''
+    await render()
+    toast(t('addPlaceDone'))
+  }
 }
 
 function renderFilters() {

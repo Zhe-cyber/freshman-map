@@ -27,7 +27,32 @@ async function call(path, options) {
 }
 
 export const getBuildings  = () => usingMock ? MOCK.buildings  : call('/buildings')
-export const getPlaces     = () => usingMock ? MOCK.places     : call('/places')
+// User recommendations live in localStorage until CLOUD ships POST /places.
+// Same shape as MOCK.places, so nothing downstream knows the difference.
+const ADDED_KEY = 'freshmanmap.added.' + campusId
+const added = () => { try { return JSON.parse(localStorage.getItem(ADDED_KEY)) || [] } catch { return [] } }
+
+export const getPlaces = () => usingMock ? [...MOCK.places, ...added()] : call('/places')
+
+export async function createPlace(draft) {
+  const place = {
+    campusId,
+    placeId: 'user-' + Date.now(),
+    type: 'food',
+    icon: '⭐',
+    name: draft.name,
+    en: draft.name,
+    note: draft.note || '',
+    lat: draft.lat, lng: draft.lng,
+    price: 1, diet: ['ask'], cash: true,
+    yes: 1, no: 0,                     // the person who added it vouches for it
+    addedByUser: true
+  }
+  if (!usingMock) return call('/places', { method: 'POST', body: JSON.stringify(place) })
+  const all = [...added(), place]
+  localStorage.setItem(ADDED_KEY, JSON.stringify(all))
+  return place
+}
 export const getActivities = () => usingMock ? MOCK.activities : call('/activities')
 
 // The official YouBike feed now permits browser requests (CORS: *), so bike

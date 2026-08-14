@@ -19,10 +19,12 @@ export const DIET = {
 }
 
 const B = (buildingId, name, en, lat, lng) => ({ campusId: 'cycu', buildingId, name, en, lat, lng })
-const I = (itemId, buildingId, floor, type, landmark, note, yes, no) => ({
+// paper: true = 有衛生紙 provided, false = 自備 bring your own, undefined = not surveyed yet.
+// photo: filename in /photos, from the survey. HEIC will not render — convert to jpg.
+const I = (itemId, buildingId, floor, type, landmark, note, paper, photo) => ({
   campusId: 'cycu', itemId, buildingId, floor, type, landmark, note,
-  reliability: yes === undefined ? null
-    : { yes, no, score: yes / (yes + no), lastReportAt: '2026-08-14T09:12:00Z' }
+  paper: paper === undefined ? null : paper,
+  photo: photo || null
 })
 
 export const MOCK = {
@@ -54,38 +56,38 @@ export const MOCK = {
     I('zhen-2t','zhen','2F','toilet','樓梯間旁 · By the stairwell','男 / 女', 16, 5),
     I('zhen-3w','zhen','3F','water', '走廊中段 · Middle of corridor','冰 / 溫 / 熱'),
     // --- surveyed 2026-08-14 from photos. Landmarks still TODO. ---
-    I('elec-b1tf','elec','B1','toilet','TODO landmark','女 women', 0, 0),
-    I('elec-b1tm','elec','B1','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-b1w','elec','B1','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-1ftf','elec','1F','toilet','TODO landmark','女 women', 0, 0),
-    I('elec-1ftm','elec','1F','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-1fw','elec','1F','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-2ftf','elec','2F','toilet','TODO landmark','女 women', 0, 0),
-    I('elec-2ftm','elec','2F','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-2fw','elec','2F','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-3ftf','elec','3F','toilet','TODO landmark','女 women', 0, 0),
-    I('elec-3ftm','elec','3F','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-3fw','elec','3F','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-4ftf','elec','4F','toilet','TODO landmark','女 women', 0, 0),
-    I('elec-4ftm','elec','4F','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-4fw','elec','4F','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-5ftm','elec','5F','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-5fw','elec','5F','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-6ftm','elec','6F','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-6fw','elec','6F','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-7ftf','elec','7F','toilet','TODO landmark','女 women', 0, 0),
-    I('elec-7fw','elec','7F','water','TODO landmark','飲水機 water dispenser'),
-    I('elec-8ftm','elec','8F','toilet','TODO landmark','男 men', 0, 0),
-    I('elec-8fw','elec','8F','water','TODO landmark','飲水機 water dispenser'),
-    I('duxin-1ftf','duxin','1F','toilet','TODO landmark','女 women', 0, 0),
-    I('duxin-1ftm','duxin','1F','toilet','TODO landmark','男 men', 0, 0),
-    I('duxin-1fw','duxin','1F','water','TODO landmark','飲水機 water dispenser'),
-    I('duxin-2ftm','duxin','2F','toilet','TODO landmark','男 men', 0, 0),
-    I('duxin-2fw','duxin','2F','water','TODO landmark','飲水機 water dispenser'),
-    I('duxin-3ftf','duxin','3F','toilet','TODO landmark','女 women', 0, 0),
-    I('duxin-3fw','duxin','3F','water','TODO landmark','飲水機 water dispenser'),
-    I('duxin-4ftm','duxin','4F','toilet','TODO landmark','男 men', 0, 0),
-    I('duxin-4fw','duxin','4F','water','TODO landmark','飲水機 water dispenser')
+    I('elec-b1tf','elec','B1','toilet','TODO landmark','女 women', null, '電學地下一樓（女）.jpg'),
+    I('elec-b1tm','elec','B1','toilet','TODO landmark','男 men', null, '電學地下一樓（男）.jpg'),
+    I('elec-b1w','elec','B1','water','TODO landmark','飲水機 water dispenser', null, '電學地下一樓飲水機.jpg'),
+    I('elec-1ftf','elec','1F','toilet','TODO landmark','女 women', null, '電學一樓（女）.jpg'),
+    I('elec-1ftm','elec','1F','toilet','TODO landmark','男 men', null, '電學一樓（男）.jpg'),
+    I('elec-1fw','elec','1F','water','TODO landmark','飲水機 water dispenser', null, '電學一樓飲水機.jpg'),
+    I('elec-2ftf','elec','2F','toilet','TODO landmark','女 women', null, '電學二樓（女）.jpg'),
+    I('elec-2ftm','elec','2F','toilet','TODO landmark','男 men', null, '電學二樓（男）.jpg'),
+    I('elec-2fw','elec','2F','water','TODO landmark','飲水機 water dispenser', null, '電學二樓飲水機.jpg'),
+    I('elec-3ftf','elec','3F','toilet','TODO landmark','女 women', null, '電學三樓（女）.jpg'),
+    I('elec-3ftm','elec','3F','toilet','TODO landmark','男 men', null, '電學三樓（男）.jpg'),
+    I('elec-3fw','elec','3F','water','TODO landmark','飲水機 water dispenser', null, '電學三樓飲水機.jpg'),
+    I('elec-4ftf','elec','4F','toilet','TODO landmark','女 women', null, '電學四樓（女）.jpg'),
+    I('elec-4ftm','elec','4F','toilet','TODO landmark','男 men', null, '電學四樓（男）.jpg'),
+    I('elec-4fw','elec','4F','water','TODO landmark','飲水機 water dispenser', null, '電學四樓飲水機.HEIC'),
+    I('elec-5ftm','elec','5F','toilet','TODO landmark','男 men', null, '電學五樓（男）.HEIC'),
+    I('elec-5fw','elec','5F','water','TODO landmark','飲水機 water dispenser', null, '電學五樓飲水機.HEIC'),
+    I('elec-6ftm','elec','6F','toilet','TODO landmark','男 men', null, '電學六樓（男）.jpg'),
+    I('elec-6fw','elec','6F','water','TODO landmark','飲水機 water dispenser', null, '電學六樓飲水機.HEIC'),
+    I('elec-7ftf','elec','7F','toilet','TODO landmark','女 women', null, '電學七樓（女）.HEIC'),
+    I('elec-7fw','elec','7F','water','TODO landmark','飲水機 water dispenser', null, '電學七樓飲水機.HEIC'),
+    I('elec-8ftm','elec','8F','toilet','TODO landmark','男 men', null, '電學八樓（男）.HEIC'),
+    I('elec-8fw','elec','8F','water','TODO landmark','飲水機 water dispenser', null, '電學八樓飲水機.HEIC'),
+    I('duxin-1ftf','duxin','1F','toilet','TODO landmark','女 women', null, '篤信一樓（女）.jpg'),
+    I('duxin-1ftm','duxin','1F','toilet','TODO landmark','男 men', null, '篤信一樓（男）.jpg'),
+    I('duxin-1fw','duxin','1F','water','TODO landmark','飲水機 water dispenser', null, '篤信一樓飲水機.jpg'),
+    I('duxin-2ftm','duxin','2F','toilet','TODO landmark','男 men', null, '篤信二樓（男）.jpg'),
+    I('duxin-2fw','duxin','2F','water','TODO landmark','飲水機 water dispenser', null, '篤信二樓飲水機.jpg'),
+    I('duxin-3ftf','duxin','3F','toilet','TODO landmark','女 women', null, '篤信三樓（女）.jpg'),
+    I('duxin-3fw','duxin','3F','water','TODO landmark','飲水機 water dispenser', null, '篤信三樓飲水機.jpg'),
+    I('duxin-4ftm','duxin','4F','toilet','TODO landmark','男 men', null, '篤信四樓（男）.jpg'),
+    I('duxin-4fw','duxin','4F','water','TODO landmark','飲水機 water dispenser', null, '篤信四樓飲水機.jpg')
   ],
 
   // Outdoor pins. Food yes/no = "can I order in English?", same engine as 廁紙.
