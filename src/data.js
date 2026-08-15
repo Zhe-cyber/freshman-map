@@ -47,7 +47,6 @@ export const MOCK = {
     I('lib-2w', 'lib','2F','water', '電梯旁 · Next to the lift','冰 / 溫 / 熱'),
     I('lib-4t', 'lib','4F','toilet','安靜區入口 · Quiet zone entry','男 / 女', 17, 3),
     I('eng-1t', 'eng','1F','toilet','大廳右側 · Right of the lobby','無障礙 accessible', 6, 9),
-    I('eng-1a', 'eng','1F','atm',   '大廳入口 · By the entrance','外國卡？要確認 verify'),
     I('eng-3t', 'eng','3F','toilet','東側樓梯旁 · Near east stairs','男 / 女', 19, 5),
     I('eng-3w', 'eng','3F','water', '茶水間 · Pantry corner','冰 / 溫 / 熱'),
     I('eng-5t', 'eng','5F','toilet','走廊底 · End of corridor','男 / 女', 21, 2),
@@ -198,10 +197,39 @@ export const MOCK = {
 
     { placeId:'g1', type:'gate', name:'警衛室 · 校門', en:'Guard house at the gate',
       lat:24.957270, lng:121.240539 },
-    { placeId:'c1', type:'atm', name:'7-Eleven', en:'ATM · 外國卡通常可用',
-      lat:24.956784, lng:121.239374 },
-    { placeId:'c2', type:'atm', name:'7-Eleven', en:'ATM · 校園東側',
-      lat:24.958180, lng:121.244797 }
+// ATM locations surveyed by the project team
+{ placeId:'c1', type:'atm', name:'ATM 1', en:'ATM 1',
+  lat:24.9548325, lng:121.2425738 },
+
+{ placeId:'c2', type:'atm', name:'ATM 2', en:'ATM 2',
+  lat:24.9559697, lng:121.2410845 },
+
+{ placeId:'c3', type:'atm', name:'ATM 3', en:'ATM 3',
+  lat:24.9572582, lng:121.2407586 },
+
+{ placeId:'c4', type:'atm', name:'ATM 4', en:'ATM 4',
+  lat:24.9580272, lng:121.2447849 },
+
+{ placeId:'c5', type:'atm', name:'ATM 5', en:'ATM 5',
+  lat:24.9591519, lng:121.2413165 },
+
+{ placeId:'c6', type:'atm', name:'ATM 6', en:'ATM 6',
+  lat:24.9592544, lng:121.2398352 },
+
+{ placeId:'c7', type:'atm', name:'ATM 7', en:'ATM 7',
+  lat:24.9573099, lng:121.2391989 },
+
+{ placeId:'c8', type:'atm', name:'ATM 8', en:'ATM 8',
+  lat:24.9568633, lng:121.2394959 },
+
+{ placeId:'c9', type:'atm', name:'ATM 9', en:'ATM 9',
+  lat:24.9543130, lng:121.2422328 },
+
+{ placeId:'c10', type:'atm', name:'ATM 10', en:'ATM 10',
+  lat:24.9538488, lng:121.2426677 },
+
+{ placeId:'c11', type:'atm', name:'ATM 11', en:'ATM 11',
+  lat:24.9539203, lng:121.2416645 }
   ],
 
   activities: [
