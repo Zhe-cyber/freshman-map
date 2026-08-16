@@ -206,6 +206,37 @@ export const MOCK = {
     { placeId:'g1', type:'gate', name:'警衛室 · 校門', en:'Guard house at the gate',
       lat:24.957270, lng:121.240539 },
 
+    // 小門 — the side gates. Surveyed in DMS and converted here; the app only
+    // ever works in decimal degrees.
+    { placeId:'g2', type:'gate', name:'貓貓小門', en:'Cat Gate',
+      lat:24.958583, lng:121.243944 },
+    { placeId:'g3', type:'gate', name:'土木小門', en:'Civil Engineering Gate',
+      lat:24.956556, lng:121.245167 },
+    { placeId:'g4', type:'gate', name:'良善小門', en:'Liangshan Gate',
+      lat:24.955639, lng:121.241944 },
+    { placeId:'g5', type:'gate', name:'懷恩小門', en:'Huai-En Gate',
+      lat:24.957917, lng:121.240111 },
+    { placeId:'g6', type:'gate', name:'全人小門', en:'Holistic Education Gate',
+      lat:24.958361, lng:121.242111 },
+    // TODO 恩慈小門 was surveyed with the SAME coordinates as 全人小門
+    // (24°57'30.1"N 121°14'31.6"E). Nudged ~15m east so the pins do not stack
+    // exactly — re-survey this one and correct it.
+    { placeId:'g7', type:'gate', name:'恩慈小門', en:'Enci Gate',
+      lat:24.958361, lng:121.242261 },
+
+    // 販賣機 outside buildings. Machines inside a building are items on a
+    // floor instead, reached through the building directory.
+    { placeId:'v1', type:'vending', name:'電學外販賣機', en:'Vending · outside Electrical Eng',
+      lat:24.9558754, lng:121.2426237 },
+    { placeId:'v2', type:'vending', name:'懷恩販賣機', en:'Vending · Huai-En',
+      lat:24.9577920, lng:121.2407569 },
+    { placeId:'v3', type:'vending', name:'活中一樓販賣機', en:'Vending · Activity Centre 1F',
+      lat:24.9587726, lng:121.2410245 },
+    { placeId:'v4', type:'vending', name:'活中二樓販賣機', en:'Vending · Activity Centre 2F',
+      lat:24.9589385, lng:121.2409330 },
+    { placeId:'v5', type:'vending', name:'教學外面販賣機', en:'Vending · outside Zhen Zhi',
+      lat:24.9560557, lng:121.2421279 },
+
     { placeId:'cat1', type:'cat', icon:'🐈', name:'橘貓休息點',
       en:'Orange Cat Resting Spot', ja:'茶トラの休憩スポット',
       lat:24.9581130, lng:121.2437261, photo:'./assets/cat-spot-1.jpg' },

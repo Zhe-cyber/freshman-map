@@ -323,3 +323,31 @@ img.photo{display:block;margin:12px auto 0;width:auto;height:auto;
   font-family:inherit;font-size:14.5px;background:#fbfdfc;color:var(--ink)}
 .chatbar input:focus-visible{outline:3px solid #2f8ef4;outline-offset:1px}
 .chatbar .btn{flex:0 0 auto;padding:11px 18px;margin:0}
+
+/* --- profile -------------------------------------------------------------- */
+.pcard{padding:16px}
+.prow{display:flex;gap:14px;align-items:center}
+.avatar-btn{position:relative;width:72px;height:72px;border-radius:50%;border:3px solid #fff;
+  background:linear-gradient(160deg,#6fe0b0,#2fae7d);cursor:pointer;flex:0 0 auto;padding:0;
+  box-shadow:var(--sh-sm);overflow:visible}
+.avatar-img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.avatar-fallback{font-size:30px;font-weight:800;color:#fff;display:grid;place-items:center;
+  width:100%;height:100%}
+.avatar-edit{position:absolute;right:-2px;bottom:-2px;background:#fff;border-radius:50%;
+  width:26px;height:26px;display:grid;place-items:center;font-size:13px;box-shadow:var(--sh-sm)}
+.pname{font-weight:800;font-size:19px;line-height:1.2}
+.plevel{font-size:12.5px;font-weight:700;color:var(--soft);margin:3px 0 7px}
+.xpbar.wide{width:100%}
+.pxp{font-size:11.5px;color:var(--soft);font-weight:600;margin-top:5px}
+.pstats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px;
+  padding-top:14px;border-top:1px solid #e4ede8}
+.pstats div{text-align:center}
+.pstats b{display:block;font-size:20px;font-weight:800}
+.pstats span{font-size:11px;color:var(--soft);font-weight:600}
+.badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.badge2{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;
+  background:#f2f8f5;color:var(--soft);border-radius:999px;padding:7px 12px}
+.badge2.got{background:#fff6e0;color:#8a5a00}
+.opt{font-weight:500;color:var(--soft);text-transform:none;letter-spacing:0}
+.field select{width:100%;border:1.5px solid #dbe6e0;border-radius:12px;padding:11px 12px;
+  font-family:inherit;font-size:14.5px;background:#fbfdfc;color:var(--ink)}

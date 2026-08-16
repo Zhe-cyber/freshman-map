@@ -5,11 +5,15 @@ import {
   getYouBikeStations, metres, floorOrder, navTo, watchMe, photoUrl
 } from './api.js'
 import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
+import { markVisited } from './profile.js'
 import { localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
 
 let map, markers = {}, buildings = [], places = [], bikePlaces = [], fallbackBikes = []
 let allBikeStations = [], curB = null, curI = null, curP = null
-const active = new Set(Object.keys(TYPES))
+// Start with every category OFF. A map that opens covered in 60 pins is
+// noise; the user picks what they are looking for. buildChips() opens the
+// category menu on first load so the controls are not hidden behind a button.
+const active = new Set()
 const html = value => String(value ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
@@ -37,6 +41,9 @@ export async function initMap() {
   addMePin()
   buildChips()
   wireCategoryMenu()
+  // Pins are created before any filter runs, so apply it once at startup —
+  // otherwise everything is visible while the counter reads 0/8.
+  filter()
   onLanguageChange(renderLanguage)
 
   labelsByZoom()
@@ -66,6 +73,7 @@ const pinEl = (cls, inner) => {
 
 function addBuildingPin(b) {
   const n = shown(b).length
+  // Same reasoning as places: a building with no visible items stays hidden.
   const el = pinEl('bldg',
     `<div class="ptag">
        <span class="pico">🏛️</span>
@@ -73,6 +81,7 @@ function addBuildingPin(b) {
        <span class="pcnt">${n}</span>
      </div>`)
   el.onclick = e => { e.stopPropagation(); openBuilding(b) }
+  el.classList.toggle('hide', !n)
   markers[b.buildingId] = new maplibregl.Marker({ element: el, anchor: 'bottom' })
     .setLngLat([b.lng, b.lat]).addTo(map)
 }
@@ -86,6 +95,9 @@ function addPlacePin(p) {
        <span class="plbl">${html(label)}</span>
      </div>`)
   el.onclick = e => { e.stopPropagation(); openPlace(p) }
+  // Respect the current filter at creation time. Bike pins are added later, as
+  // the viewport moves, and would otherwise appear regardless of the filter.
+  el.classList.toggle('hide', !active.has(p.type))
   markers[p.placeId] = new maplibregl.Marker({ element: el, anchor: 'bottom' })
     .setLngLat([p.lng, p.lat]).addTo(map)
 }
@@ -193,9 +205,17 @@ function addMePin() {
 
 const shown = b => itemsIn(b.buildingId).filter(i => active.has(i.type))
 
+let chipsBuiltOnce = false
+
 function buildChips() {
   const box = document.getElementById('chips')
-  const wasOpen = box.querySelector('.category-toggle')?.getAttribute('aria-expanded') === 'true'
+  // Nothing is shown until the user picks a category, so open the menu the
+  // first time — otherwise the app loads to an empty map and one unlabelled
+  // button, which reads as broken. Re-renders keep whatever the user chose.
+  const wasOpen = chipsBuiltOnce
+    ? box.querySelector('.category-toggle')?.getAttribute('aria-expanded') === 'true'
+    : true
+  chipsBuiltOnce = true
   box.innerHTML = `<button type="button" class="category-toggle" aria-expanded="${wasOpen}" aria-controls="category-options">
       <span aria-hidden="true">☰</span>
       <span>${html(tr('categoryMenu'))}</span>
@@ -266,6 +286,7 @@ function select(id) {
 
 // --- building → floor directory. No 3D, no floor plans, no indoor positioning.
 export function openBuilding(b, move = true) {
+  markVisited(b.buildingId)   // counts toward the profile's "visited" stat
   curB = b; curI = null; curP = null
   select(b.buildingId)
 

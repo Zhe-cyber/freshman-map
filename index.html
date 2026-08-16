@@ -50,6 +50,10 @@
   </div>
 </div>
 
+<div class="screen" id="s-me">
+  <div class="scroll"></div>
+</div>
+
 <div class="login" id="login" hidden></div>
 <div class="sheet" id="sheet"></div>
 <div class="toast" id="toast"></div>
@@ -58,6 +62,7 @@
   <button class="on" data-screen="s-map"><span class="nav-icon">🗺️</span><span class="nav-label" data-i18n="navMap"></span></button>
   <button data-screen="s-food"><span class="nav-icon">🍜</span><span class="nav-label" data-i18n="navFood"></span></button>
   <button data-screen="s-buddy"><span class="nav-icon">🤝</span><span class="nav-label" data-i18n="navBuddy"></span></button>
+  <button data-screen="s-me"><span class="nav-icon">🐣</span><span class="nav-label" data-i18n="navMe"></span></button>
 </nav>
 
 <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
@@ -65,6 +70,7 @@
   import { initMap, resizeMap } from './src/map.js'
   import { initFood } from './src/food.js'
   import { initBuddy } from './src/buddy.js'
+  import { initProfile, render as renderProfile } from './src/profile.js'
   import { campus, usingMock } from './src/api.js'
   import { initLogin, wireSignOut } from './src/login.js'
   import { applyTranslations, getLanguage, localName, onLanguageChange, setLanguage, t } from './src/i18n.js'
@@ -87,10 +93,11 @@
     document.getElementById(b.dataset.screen).classList.add('on')
     closeSheet()
     if (b.dataset.screen === 's-map') setTimeout(resizeMap, 50)
+    if (b.dataset.screen === 's-me') renderProfile()
   })
 
   await initLogin()
-  initMap(); initFood(); initBuddy()
+  initMap(); initFood(); initBuddy(); initProfile()
   wireSignOut()
   if (usingMock) console.info('[Freshman Map] mock mode — set API_BASE in src/api.js when CLOUD deploys')
 </script>
