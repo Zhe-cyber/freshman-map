@@ -166,6 +166,8 @@ export async function render() {
       <div class="actions"><button class="btn go" id="pf-save">${t('profileSave')}</button></div>
     </div>
 
+    <button class="linkbtn quiet" id="pf-signout">${t('loginSignOut')}</button>
+
     <input type="file" id="pf-file" accept="image/*" hidden>`
 
   root.querySelector('#pf-avatar-btn').onclick = () => root.querySelector('#pf-file').click()

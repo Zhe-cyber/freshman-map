@@ -18,16 +18,6 @@ html,body{margin:0;height:100%;overflow:hidden;background:#eef4f1;color:var(--in
 .hud{position:absolute;left:0;right:0;z-index:5;pointer-events:none}
 .hud>*{pointer-events:auto}
 .topbar{top:0;padding:14px 14px 0;display:flex;gap:10px;align-items:flex-start}
-.badge{background:var(--card);border-radius:18px;padding:8px 14px;box-shadow:var(--sh);
-  display:flex;align-items:center;gap:10px;border:none;font-family:inherit;color:var(--ink);
-  cursor:pointer;text-align:left}
-.badge:active{transform:scale(.96)}
-.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(160deg,#6fe0b0,#2fae7d);
-  display:grid;place-items:center;font-size:18px;border:2.5px solid #fff;overflow:hidden;
-  color:#fff;font-weight:800;flex:0 0 auto}
-.avatar img{width:100%;height:100%;object-fit:cover;display:block}
-.lvl{font-weight:800;font-size:15px;line-height:1}
-.lvl small{display:block;font-weight:500;font-size:11px;color:var(--soft);margin-top:2px}
 .xpbar{width:74px;height:7px;border-radius:4px;background:#e4efe9;overflow:hidden;margin-top:5px}
 .xpbar i{display:block;height:100%;width:62%;background:linear-gradient(90deg,#ffd447,#ff9f3d)}
 .spacer{flex:1}
@@ -63,19 +53,12 @@ html,body{margin:0;height:100%;overflow:hidden;background:#eef4f1;color:var(--in
   transform:translateX(-102%);transition:transform .22s ease;visibility:hidden}
 .category-panel.open{transform:none;visibility:visible}
 .scrim{position:fixed;inset:0;z-index:39;background:rgba(16,40,32,.34);border:0}
-.sbhead{display:flex;align-items:center;gap:11px}
-.sbpic{width:52px;height:52px;border-radius:50%;flex:0 0 auto;overflow:hidden;
-  background:linear-gradient(160deg,#6fe0b0,#2fae7d);color:#fff;font:800 21px/52px inherit;
-  text-align:center}
-.sbpic img{width:100%;height:100%;object-fit:cover;display:block}
-.sbwho{flex:1;min-width:0}
-.sbname{font-weight:800;font-size:15px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap}
-.sblvl{font-size:11.5px;color:var(--soft);font-weight:600;margin-top:2px}
+.sbhead{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  border-bottom:1px solid #e9f0ec;padding-bottom:11px}
 .sbclose{border:0;background:none;font-size:17px;color:var(--soft);cursor:pointer;
   padding:4px;flex:0 0 auto;font-family:inherit}
 .sbtitle{font-size:11px;font-weight:800;color:var(--soft);letter-spacing:.06em;
-  text-transform:uppercase;border-top:1px solid #e9f0ec;padding-top:12px}
+  text-transform:uppercase}
 .sbcats{display:flex;flex-direction:column;gap:7px}
 .sbcats .chip{box-shadow:none;border:1.5px solid #dbe6e0;padding:9px 12px;width:100%;
   justify-content:flex-start}
@@ -264,8 +247,6 @@ html[lang="ja"] body{font-family:"Baloo 2","Noto Sans JP","Noto Sans TC",system-
    and at 375 the top bar ran 19px off the right edge. */
 @media (max-width:400px){
   .topbar{padding:10px 10px 0;gap:6px}
-  .badge{padding:8px 10px;gap:6px}
-  .avatar{width:30px;height:30px}
   .lang-select{width:58px}
   .iconbtn{width:40px;height:40px}
 }

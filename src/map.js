@@ -5,7 +5,7 @@ import {
   getYouBikeStations, metres, floorOrder, navTo, watchMe, photoUrl
 } from './api.js'
 import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
-import { markVisited, loadProfile, stats } from './profile.js'
+import { markVisited } from './profile.js'
 import { localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
 
 let map, markers = {}, buildings = [], places = [], bikePlaces = [], fallbackBikes = []
@@ -41,7 +41,6 @@ export async function initMap() {
   addMePin()
   buildChips()
   wireCategoryMenu()
-  paintProfile()          // the badge is visible before the sidebar is opened
   // Pins are created before any filter runs, so apply it once at startup —
   // otherwise everything is visible while the counter reads 0/8.
   filter()
@@ -225,15 +224,9 @@ function buildChips() {
     </button>
     <div class="category-panel${wasOpen ? ' open' : ''}" id="category-options" role="group" aria-label="${html(tr('categoryMenu'))}">
       <div class="sbhead">
-        <div class="sbpic" id="sb-pic"></div>
-        <div class="sbwho">
-          <div class="sbname" id="sb-name"></div>
-          <div class="sblvl" id="sb-lvl"></div>
-          <div class="xpbar wide"><i id="sb-xp"></i></div>
-        </div>
+        <div class="sbtitle">${html(tr('categoryMenu'))}</div>
         <button type="button" class="sbclose" id="sb-close" aria-label="${html(tr('close'))}">✕</button>
       </div>
-      <div class="sbtitle">${html(tr('categoryMenu'))}</div>
       <div class="sbcats"></div>
     </div>`
   const panel = box.querySelector('.sbcats')
@@ -261,7 +254,6 @@ function buildChips() {
   // back in step with whatever state the panel was rebuilt in.
   const scrim = document.getElementById('sidebar-scrim')
   if (scrim) scrim.hidden = !wasOpen
-  if (wasOpen) paintProfile()
 }
 
 function setCategoryMenu(open) {
@@ -271,48 +263,20 @@ function setCategoryMenu(open) {
   toggle.setAttribute('aria-expanded', String(open))
   box.querySelector('.category-panel')?.classList.toggle('open', open)
   document.getElementById('sidebar-scrim').hidden = !open
-  if (open) paintProfile()
 }
 
 const closeCategoryMenu = () => setCategoryMenu(false)
 
 function wireCategoryMenu() {
-  document.getElementById('sidebar-open').onclick = () => setCategoryMenu(true)
   document.getElementById('sidebar-scrim').onclick = closeCategoryMenu
   document.addEventListener('click', event => {
     const box = document.getElementById('chips')
-    if (box.contains(event.target) || event.target.closest('#sidebar-open')) return
+    if (box.contains(event.target)) return
     closeCategoryMenu()
   })
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape') closeCategoryMenu()
   })
-}
-
-// The top-bar badge used to read a hardcoded "Lv 3". Both it and the sidebar
-// header now show the real picture and the level actually earned.
-async function paintProfile() {
-  const p = loadProfile()
-  const initial = (p.displayName || 'You').slice(0, 1)
-  const pic = p.avatar
-    ? `<img src="${p.avatar}" alt="" onerror="this.replaceWith(document.createTextNode('${
-        html(initial).replace(/'/g, '')}'))">`
-    : html(initial)
-
-  const set = (id, v, prop = 'innerHTML') => {
-    const el = document.getElementById(id)
-    if (el) el[prop] = v
-  }
-  set('sb-pic', pic)
-  set('hud-avatar', pic)
-  set('sb-name', html(p.displayName || tr('profileNoName')))
-
-  const s = await stats()
-  set('sb-lvl', `${html(tr('levelLabel', { n: s.levelIndex }))} · ${html(tr(s.levelKey))}`)
-  set('hud-level', `${html(tr('levelLabel', { n: s.levelIndex }))}`)
-  const pct = Math.round(s.progress * 100) + '%'
-  const xp = document.getElementById('sb-xp'); if (xp) xp.style.width = pct
-  const hxp = document.getElementById('hud-xp'); if (hxp) hxp.style.width = pct
 }
 
 function filter() {

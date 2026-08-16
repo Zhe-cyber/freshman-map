@@ -99,17 +99,16 @@ async function submit(e) {
   }
 }
 
-// Sign-out lives on the profile chip in the map HUD.
+// Sign-out lives on the profile screen. It used to hang off the profile chip
+// in the map HUD; that chip is gone, and an app you cannot sign out of is
+// worse than one with a plain button in the obvious place.
+//
+// The profile screen re-renders on save and on a language change, so this is
+// bound by delegation rather than to an element that will be replaced.
 export function wireSignOut() {
-  const badge = document.querySelector('.badge')
-  if (!badge) return
-  badge.style.cursor = 'pointer'
-  badge.title = t('loginSignOut')
-  badge.onclick = () => {
+  document.getElementById('s-me')?.addEventListener('click', event => {
+    if (!event.target.closest('#pf-signout')) return
     if (!isSignedIn()) return
     if (confirm(t('loginSignOutConfirm'))) { signOut(); location.reload() }
-  }
-  const u = currentUser()
-  const label = badge.querySelector('.lvl small')
-  if (u && label) label.textContent = u.name
+  })
 }
