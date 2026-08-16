@@ -10,7 +10,7 @@
 // the original fills the quota with one upload. Uploading to S3 would need a
 // presigned-URL endpoint; that is the upgrade, not this.
 
-import { user, setUserName, getPlaces, getActivities, campusId } from './api.js'
+import { user, setUserName, getPlaces, getActivities, campusId, publishProfile } from './api.js'
 import { toast } from './ui.js'
 import { t, onLanguageChange } from './i18n.js'
 
@@ -150,6 +150,7 @@ export async function render() {
     <div class="card">
       <div class="ctitle">${t('profileDetails')}</div>
       <div class="hint">${t('profileOptionalNote')}</div>
+      <div class="hint visnote">👀 ${t('profileVisibility')}</div>
       ${FIELDS.map(([key, required, type, max]) => `
         <div class="field">
           <label for="pf-${key}">${t('pf.' + key)}${required ? ' *' : ` <span class="opt">${t('optional')}</span>`}</label>
@@ -180,6 +181,18 @@ async function save() {
   if (!p.displayName) return toast(t('profileNeedName'))
   saveProfile(p)
   setUserName(p.displayName)          // chat and hosting use this name
+
+  // Publish the shareable subset so people can see who is organising or
+  // joining an activity before they commit. The whitelist lives in the Lambda
+  // as well — this side decides what to send, that side decides what to store.
+  try {
+    await publishProfile({
+      displayName: p.displayName, avatar: p.avatar, homeCountry: p.homeCountry,
+      department: p.department, year: p.year, languages: p.languages,
+      interests: p.interests, bio: p.bio
+    })
+  } catch { /* offline or not signed in — the local profile still saved */ }
+
   await render()
   toast(t('profileSaved'))
 }

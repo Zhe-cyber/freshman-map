@@ -286,7 +286,30 @@ const mockMessages = {}
 
 export async function getMessages(activityId) {
   if (usingMock) return mockMessages[activityId] || []
-  return call(`/activities/${activityId}/messages`)
+  // The server checks membership on reads too, so it needs to know who asks.
+  return call(`/activities/${activityId}/messages?userId=${encodeURIComponent(user.userId)}`)
+}
+
+// --- public profile cards --------------------------------------------------
+// The full profile stays on the device. This publishes only the subset other
+// people see when deciding whether to join something.
+const mockCards = {}
+
+export async function publishProfile(card) {
+  if (usingMock) {
+    mockCards[user.userId] = { ...card, userId: user.userId }
+    return mockCards[user.userId]
+  }
+  return call(`/users/${encodeURIComponent(user.userId)}`, {
+    method: 'PUT', body: JSON.stringify(card)
+  })
+}
+
+export async function getProfiles(userIds = []) {
+  const ids = [...new Set(userIds)].filter(Boolean).slice(0, 25)
+  if (!ids.length) return []
+  if (usingMock) return ids.map(id => mockCards[id]).filter(Boolean)
+  return call(`/users?ids=${ids.map(encodeURIComponent).join(',')}`)
 }
 
 export async function sendMessage(activityId, text) {

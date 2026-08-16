@@ -38,7 +38,7 @@ const TABLE = process.env.TABLE || 'freshmanmap'
 
 const CORS = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
+  'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS',
   'access-control-allow-headers': 'content-type',
   'access-control-max-age': '86400'
 }
@@ -421,6 +421,49 @@ export const handler = async (event) => {
     }
 
     // -----------------------------------------------------------------------
+    // PUBLIC PROFILES
+    //
+    // GET  /c/{campus}/users?ids=a,b,c   -> the cards shown on an activity
+    // PUT  /c/{campus}/users/{userId}    -> publish your own card
+    //
+    // Only the fields a user chose to share are stored here. The full profile
+    // stays on their device; this is the subset other people can see when
+    // deciding whether to join something.
+    // -----------------------------------------------------------------------
+
+    if (seg[2] === 'users') {
+      if (method === 'GET' && !seg[3]) {
+        const ids = (event.queryStringParameters?.ids || '')
+          .split(',').map(s => s.trim()).filter(Boolean).slice(0, 25)
+        if (!ids.length) return json(200, [])
+
+        const found = await Promise.all(ids.map(id =>
+          db.send(new GetCommand({
+            TableName: TABLE,
+            Key: { pk: pk(campusId), sk: `USER#${id}` }
+          })).then(r => r.Item).catch(() => null)))
+
+        return json(200, found.filter(Boolean).map(({ pk, sk, ...rest }) => rest))
+      }
+
+      if (method === 'PUT' && seg[3]) {
+        const userId = decodeURIComponent(seg[3])
+        // Whitelist, not passthrough: only these keys are ever published, so a
+        // future private field cannot leak by being added to the profile form.
+        const allowed = ['displayName', 'avatar', 'homeCountry',
+                         'department', 'year', 'languages', 'interests', 'bio']
+        const card = { userId, updatedAt: new Date().toISOString() }
+        for (const k of allowed) if (body[k]) card[k] = String(body[k]).slice(0, 4000)
+
+        await db.send(new PutCommand({
+          TableName: TABLE,
+          Item: { pk: pk(campusId), sk: `USER#${userId}`, ...card }
+        }))
+        return json(200, card)
+      }
+    }
+
+    // -----------------------------------------------------------------------
     // ACTIVITY CHAT
     //
     // GET  /c/{campus}/activities/{activityId}/messages
@@ -442,6 +485,22 @@ export const handler = async (event) => {
       const activityId = decodeURIComponent(seg[3])
 
       if (method === 'GET') {
+        // Reading is checked too, not just writing. Hiding the chat button in
+        // the UI is not privacy — the API is public, and a non-member could
+        // read a whole conversation with one curl. The panel tells users
+        // "only people who joined can see this", so that has to be true here.
+        const reader = event.queryStringParameters?.userId
+        if (!reader) return json(400, { error: 'userId required' })
+
+        const act = await db.send(new GetCommand({
+          TableName: TABLE,
+          Key: { pk: pk(campusId), sk: `ACT#${activityId}` }
+        }))
+        if (!act.Item) return json(404, { error: 'no such activity' })
+        if (!normaliseJoinedBy(act.Item.joinedBy).includes(reader)) {
+          return json(403, { error: 'join the activity first' })
+        }
+
         const r = await db.send(new QueryCommand({
           TableName: TABLE,
           KeyConditionExpression: 'pk = :p AND begins_with(sk, :s)',

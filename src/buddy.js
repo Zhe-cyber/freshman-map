@@ -21,11 +21,12 @@ import {
   deleteActivity,
   getMessages,
   sendMessage,
+  getProfiles,
   user,
   setUserName
 } from './api.js'
 
-import { toast } from './ui.js'
+import { toast, openSheet } from './ui.js'
 import { localText, onLanguageChange, t } from './i18n.js'
 
 const CATEGORIES = [
@@ -38,6 +39,9 @@ const MAX_CAP = 50
 
 let activities = []
 let tick = null
+// userId -> published profile card. Fetched once per render for everyone
+// visible, so opening a card is instant and does not hit the API per tap.
+const cards = new Map()
 
 const html = v => String(v ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -96,7 +100,19 @@ async function load() {
     toast(t('errGeneric'))
     activities = []
   }
+  await loadCards()
   render()
+}
+
+// One request for every person shown on the screen, rather than one per name.
+async function loadCards() {
+  const ids = [...new Set(activities.flatMap(a =>
+    [a.userId, ...(a.joinedBy || [])]).filter(Boolean))]
+    .filter(id => !cards.has(id) && !String(id).startsWith('seed-'))
+  if (!ids.length) return
+  try {
+    for (const c of await getProfiles(ids)) cards.set(c.userId, c)
+  } catch { /* profiles are a nicety; the list still works without them */ }
 }
 
 function render() {
@@ -120,6 +136,10 @@ function render() {
   list.querySelectorAll('[data-join]').forEach(b => b.onclick = () => join(b.dataset.join))
   list.querySelectorAll('[data-del]').forEach(b => b.onclick = () => remove(b.dataset.del))
   list.querySelectorAll('[data-chat]').forEach(b => b.onclick = () => openChat(b.dataset.chat))
+  list.querySelectorAll('[data-who]').forEach(b => b.onclick = e => {
+    e.stopPropagation()
+    showCard(b.dataset.who)
+  })
 }
 
 // Only appears while the app is open — that is the honest limit of it.
@@ -150,9 +170,21 @@ function card(a) {
   const seats = Array.from({ length: Math.min(capacity, 12) }, (_, i) =>
     `<div class="seat${i < joined ? ' on' : ''}">${i < joined ? '🙂' : ''}</div>`).join('')
 
+  const person = id => {
+    const c = cards.get(id)
+    const label = c?.displayName || shortName(id)
+    return c
+      ? `<button class="who-chip" data-who="${html(id)}">${
+          c.avatar ? `<img src="${c.avatar}" alt="">` : '<span class="who-dot"></span>'
+        }${html(label)}</button>`
+      : `<span class="who-chip flat">${html(label)}</span>`
+  }
+
+  const host = a.userId ? person(a.userId) : html(a.hostName || '—')
+
   const who = (a.joinedBy || []).length
-    ? `<div class="who">${t('actWhoComing')}: ${a.joinedBy.slice(0, 6)
-        .map(id => html(shortName(id))).join(', ')}${a.joinedBy.length > 6 ? ' …' : ''}</div>`
+    ? `<div class="who"><span class="wholabel">${t('actWhoComing')}</span>
+        ${a.joinedBy.slice(0, 8).map(person).join('')}${a.joinedBy.length > 8 ? ' …' : ''}</div>`
     : ''
 
   const label = a.joinedByMe ? `✓ ${t('joined')}` : full ? t('full') : t('join')
@@ -164,7 +196,7 @@ function card(a) {
       <div style="flex:1">
         <div class="fname">${html(localText(a.title))}</div>
         <div class="fsub">🕒 ${html(clockTime(a))} · 📍 ${html(a.place || '')}</div>
-        <div class="fsub">${t('by')} ${html(a.hostName || '—')}</div>
+        <div class="fsub">${t('by')} ${host}</div>
       </div>
       <div class="acol">
         <span class="cdown ${p}">${html(countdown(a))}</span>
@@ -200,6 +232,7 @@ async function join(activityId) {
     a.joined = r.joined ?? a.joined
     a.joinedByMe = r.joinedByMe ?? !a.joinedByMe
     if (r.joinedBy) a.joinedBy = r.joinedBy
+    await loadCards()
     render()
     toast(a.joinedByMe ? t('joinSuccess') : t('activityLeft'))
   } catch {
@@ -217,6 +250,33 @@ async function remove(activityId) {
   } catch {
     toast(t('errGeneric'))
   }
+}
+
+// Whether to join often comes down to who else is going. Tapping a name shows
+// what that person chose to share — nothing more; the rest of their profile
+// never leaves their device.
+function showCard(userId) {
+  const c = cards.get(userId)
+  if (!c) return toast(t('cardNone'))
+  const rows = [
+    ['pf.homeCountry', c.homeCountry],
+    ['pf.department',  c.department],
+    ['pf.year',        c.year && t('year.' + c.year)],
+    ['pf.languages',   c.languages],
+    ['pf.interests',   c.interests]
+  ].filter(([, v]) => v)
+
+  openSheet(`
+    <div class="head">
+      <div class="cardpic">${c.avatar
+        ? `<img src="${c.avatar}" alt="">`
+        : html((c.displayName || '?').slice(0, 1))}</div>
+      <div><div class="name">${html(c.displayName || t('profileNoName'))}</div>
+        ${c.bio ? `<div class="sub">${html(c.bio)}</div>` : ''}</div>
+    </div>
+    ${rows.length ? `<div class="cardrows">${rows.map(([k, v]) =>
+      `<div><span>${t(k)}</span><b>${html(v)}</b></div>`).join('')}</div>` : ''}
+    <div class="hint" style="margin-top:12px">${t('cardPrivacy')}</div>`)
 }
 
 // ---------------------------------------------------------------------------

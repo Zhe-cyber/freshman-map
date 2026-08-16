@@ -172,7 +172,7 @@ API_ID=$(aws apigatewayv2 get-apis \
 # Without DELETE in API Gateway CORS, the browser blocks the request
 # before Lambda can receive it.
 
-CORS_CONFIG='{"AllowOrigins":["*"],"AllowMethods":["GET","POST","DELETE","OPTIONS"],"AllowHeaders":["content-type"]}'
+CORS_CONFIG='{"AllowOrigins":["*"],"AllowMethods":["GET","POST","PUT","DELETE","OPTIONS"],"AllowHeaders":["content-type"]}'
 
 if [ "$API_ID" = "None" ] || [ -z "$API_ID" ]; then
 
