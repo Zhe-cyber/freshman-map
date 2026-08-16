@@ -58,7 +58,10 @@ const deviceUser = (() => {
 })()
 
 // A signed-in Cognito user wins; otherwise use device identity.
-export const user = currentUser() || deviceUser
+// An identity without a userId is worse than no identity at all — every write
+// carries this id, so a blank one silently corrupts whatever it touches.
+const signedIn = currentUser()
+export const user = signedIn?.userId ? signedIn : deviceUser
 
 export function setUserName(name) {
   deviceUser.name = name.trim()

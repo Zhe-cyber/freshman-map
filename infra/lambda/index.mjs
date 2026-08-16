@@ -77,7 +77,9 @@ function normaliseJoinedBy(value) {
   }
 
   if (Array.isArray(value)) {
-    return value
+    // Drop nulls so records written before userId was validated still render
+    // as "3 people" rather than an unnamed ghost member.
+    return value.filter(v => typeof v === 'string' && v)
   }
 
   return []
@@ -274,10 +276,15 @@ export const handler = async (event) => {
         })
       }
 
-      const userId = body.userId || ''
+      // A user id must be a non-empty string. A client bug once sent null and
+      // it was written straight through, so the activity had a member nobody
+      // could name and a creator nobody could match.
+      const userId = typeof body.userId === 'string' && body.userId ? body.userId : ''
+      if (!userId) return json(400, { error: 'userId required' })
 
       const activity = {
         ...body,
+        userId,
         campusId,
 
         activityId:
@@ -290,11 +297,11 @@ export const handler = async (event) => {
         // atomic ADD expects and what the seeder writes. A List here would
         // make the first join fail with "incorrect data type".
         //
-        // DynamoDB rejects empty sets, so with no creator the attribute is
-        // left off entirely rather than written empty.
-        ...(userId ? { joinedBy: new Set([userId]) } : {}),
+        // Always overwritten from the verified userId above, never taken from
+        // the request body — the client does not get to choose the member list.
+        joinedBy: new Set([userId]),
 
-        joined: userId ? 1 : 0,
+        joined: 1,
 
         createdAt:
           new Date().toISOString()

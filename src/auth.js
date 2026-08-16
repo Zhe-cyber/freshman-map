@@ -41,8 +41,13 @@ export function currentUser() {
     if (!s?.idToken) return null
     // The id token is a JWT; its payload carries sub and the name we set.
     const claims = decodeSegment(s.idToken.split('.')[1])
-    if (claims.exp * 1000 < Date.now()) return { ...s, expired: true }
-    return { userId: claims.sub, name: claims.name || s.username, username: s.username }
+    const who = { userId: claims.sub, name: claims.name || s.username, username: s.username }
+    // An expired token still identifies who you are — sub does not change when
+    // it is refreshed. Returning a bare {...s, expired} here dropped userId,
+    // and api.js reads `user` once at import, so anything created in that
+    // session was written with userId: null.
+    if (claims.exp * 1000 < Date.now()) return { ...who, expired: true }
+    return who
   } catch { return null }
 }
 

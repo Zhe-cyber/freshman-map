@@ -208,7 +208,8 @@ function card(a) {
       </div>
     </div>`
 
-  const label = a.joinedByMe ? `✓ ${t('joined')}` : full ? t('full') : t('join')
+  // t('joined') already carries the tick; prefixing another gave "✓ ✓ Joined".
+  const label = a.joinedByMe ? t('joined') : full ? t('full') : t('join')
   const cls = a.joinedByMe ? 'done' : full ? 'full' : ''
 
   return `<div class="card act ${p}">
