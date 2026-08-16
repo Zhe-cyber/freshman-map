@@ -313,10 +313,11 @@ function openItem(itemId) {
 }
 
 function photoBlock(i) {
+  const alt = i.landmark ? localText(i.landmark) : localName(i)
   return i.photo
-    ? `<img class="photo" src="${photoUrl(i.photo)}" alt="${html(localText(i.landmark))}"
+    ? `<img class="photo" src="${photoUrl(i.photo)}" alt="${html(alt)}"
            data-zoom="${photoUrl(i.photo)}">`
-    : `<div class="photo">📷 ${html(localText(i.landmark))}</div>`
+    : `<div class="photo">📷 ${html(alt)}</div>`
 }
 
 // We state whether paper is provided. We do not track it live.
@@ -352,6 +353,8 @@ function openPlace(p, move = true) {
         <span class="val" style="color:${p.returns ? '#1f9d6b' : '#e04848'}">${p.returns ?? '—'}</span></div>
       <div class="meta">${status}</div></div>`
   }
+
+  if (p.photo) body += photoBlock(p)
 
   openSheet(`
     <div class="head">

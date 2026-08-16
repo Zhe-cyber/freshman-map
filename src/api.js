@@ -124,10 +124,18 @@ const added = () => {
   }
 }
 
-export const getPlaces = () =>
-  usingMock
-    ? [...MOCK.places, ...added()]
-    : call('/places')
+// Curated map spots ship with the frontend as a fallback. This keeps newly
+// surveyed spots visible immediately, even before every cloud database has
+// been reseeded. A cloud record with the same id always wins.
+const curatedPlaces = MOCK.places.filter(place => place.type === 'cat')
+
+export const getPlaces = async () => {
+  if (usingMock) return [...MOCK.places, ...added()]
+
+  const cloudPlaces = await call('/places')
+  const cloudIds = new Set(cloudPlaces.map(place => place.placeId))
+  return [...cloudPlaces, ...curatedPlaces.filter(place => !cloudIds.has(place.placeId))]
+}
 
 export async function createPlace(draft) {
   const place = {

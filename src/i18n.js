@@ -54,6 +54,7 @@ const messages = {
     distanceMetres: '{count} 公尺', phraseHint: '點一下顯示這句話', translationUnavailable: '暫無翻譯',
     'description.building': '校園建築', 'description.restaurant': '餐廳',
     'description.bikeStation': 'YouBike 車站 · {station}', 'description.entrance': '校園入口', 'description.atm': '自動提款機',
+    'description.cat': '校園貓咪出沒點',
     'diet.veg': '素食', 'diet.vegan': '全素', 'diet.ask': '清真？要問', cash: '現金',
     activityPrompt: '活動名稱？', activityExample: '🍜 一起吃拉麵', activityCreated: '活動開好了！等人加入 🎉',
     joined: '✓ 已加入', full: '額滿', join: '加入', by: '主揪 {name}',
@@ -113,6 +114,7 @@ const messages = {
     distanceMetres: '{count} m away', phraseHint: 'Tap to show this phrase', translationUnavailable: 'Translation unavailable',
     'description.building': 'Campus building', 'description.restaurant': 'Restaurant',
     'description.bikeStation': 'YouBike station · {station}', 'description.entrance': 'Campus entrance', 'description.atm': 'Cash machine',
+    'description.cat': 'Campus cat hangout',
     'diet.veg': 'Vegetarian', 'diet.vegan': 'Vegan', 'diet.ask': 'Halal? Ask', cash: 'Cash',
     activityPrompt: 'Activity name?', activityExample: '🍜 Eat ramen together', activityCreated: 'Activity created! Waiting for people 🎉',
     joined: '✓ Joined', full: 'Full', join: 'Join', by: 'by {name}', activityFull: 'This activity is full 😢',
@@ -171,6 +173,7 @@ const messages = {
     distanceMetres: '{count} m先', phraseHint: 'タップしてこのフレーズを表示', translationUnavailable: '翻訳なし',
     'description.building': 'キャンパス施設', 'description.restaurant': 'レストラン',
     'description.bikeStation': 'YouBikeステーション · {station}', 'description.entrance': 'キャンパス入口', 'description.atm': 'ATM',
+    'description.cat': 'キャンパス猫スポット',
     'diet.veg': 'ベジタリアン', 'diet.vegan': 'ヴィーガン', 'diet.ask': 'ハラール？要確認', cash: '現金',
     activityPrompt: 'アクティビティ名は？', activityExample: '🍜 一緒にラーメン', activityCreated: '作成しました！参加者を待っています 🎉',
     joined: '✓ 参加済み', full: '満員', join: '参加', by: '主催：{name}', activityFull: 'このアクティビティは満員です 😢',
@@ -354,6 +357,7 @@ export function secondaryName(entity) {
   }
   if (entity.type === 'gate') return t('description.entrance')
   if (entity.type === 'atm') return t('description.atm')
+  if (entity.type === 'cat') return t('description.cat')
   return ''
 }
 
