@@ -11,7 +11,8 @@ export const TYPES = {
   bike:   { label: 'U-Bike', en: 'U-Bike',   icon: '🚲', color: '#f2c53d' },
   vending:{ label: '販賣機', en: 'Vending',  icon: '🥤', color: '#8b6fd6' },
   gate:   { label: '校門',   en: 'Entrance', icon: '🚪', color: '#a97cf2' },
-  cat:    { label: '貓咪據點', en: 'Cat Spot', icon: '🐈', color: '#e48c55' }
+  cat:    { label: '貓咪據點', en: 'Cat Spot', icon: '🐈', color: '#e48c55' },
+  entertainment: { label: '娛樂', en: 'Entertainment', icon: '🎮', color: '#d05ce3' }
 }
 
 export const DIET = {
@@ -240,6 +241,24 @@ export const MOCK = {
     { placeId:'cat1', type:'cat', icon:'🐈', name:'橘貓休息點',
       en:'Orange Cat Resting Spot', ja:'茶トラの休憩スポット',
       lat:24.9581130, lng:121.2437261, photo:'./assets/cat-spot-1.jpg' },
+
+    // Entertainment venues near CYCU. Coordinates verified from OpenStreetMap
+    // on 2026-08-16; each pin uses the shared Google Maps directions action.
+    { placeId:'e1', type:'entertainment', icon:'🎯', name:'小時候彈珠堂',
+      en:'Childhood Pinball Arcade', ja:'小時候ピンボール', venueKind:'arcade',
+      lat:24.9551844, lng:121.2399105 },
+    { placeId:'e2', type:'entertainment', icon:'🎤', name:'星光大道KTV',
+      en:'Starlight Avenue KTV', ja:'星光大道KTV', venueKind:'ktv',
+      lat:24.9585724, lng:121.2254967 },
+    { placeId:'e3', type:'entertainment', icon:'🎱', name:'斯洛克撞球館',
+      en:'Sloke Billiards Hall', ja:'スロークビリヤード', venueKind:'billiards',
+      lat:24.9392592, lng:121.2495339 },
+    { placeId:'e4', type:'entertainment', icon:'🛒', name:'遠東SOGO百貨',
+      en:'Far Eastern SOGO', ja:'遠東SOGO百貨店', venueKind:'mall',
+      lat:24.9627951, lng:121.2236474 },
+    { placeId:'e5', type:'entertainment', icon:'🛒', name:'中壢大時鐘廣場',
+      en:'Zhongli Big Clock Plaza', ja:'中壢大時計広場', venueKind:'mall',
+      lat:24.9558670, lng:121.2214547 },
 
 // ATM locations surveyed by the project team
 { placeId:'c1', type:'atm', name:'ATM 1', en:'ATM 1',

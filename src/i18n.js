@@ -10,6 +10,7 @@ const messages = {
     navMap: '地圖', navFood: '美食', navBuddy: '夥伴',
     'type.toilet': '廁所', 'type.water': '飲水機', 'type.atm': 'ATM',
     'type.food': '美食', 'type.bike': 'U-Bike', 'type.vending': '販賣機', 'type.gate': '校門', 'type.cat': '貓咪據點',
+    'type.entertainment': '娛樂',
     paused: '暫停', away: '公尺', takeMe: '帶我去', go: '帶我去',
     hasPaper: '有衛生紙', hasPaperYes: '有紙', hasPaperNo: '沒紙',
     cancel: '取消',
@@ -76,7 +77,9 @@ const messages = {
     distanceMetres: '{count} 公尺', phraseHint: '點一下顯示這句話', translationUnavailable: '暫無翻譯',
     'description.building': '校園建築', 'description.restaurant': '餐廳',
     'description.bikeStation': 'YouBike 車站 · {station}', 'description.entrance': '校園入口', 'description.atm': '自動提款機',
-    'description.cat': '校園貓咪出沒點',
+    'description.cat': '校園貓咪出沒點', 'description.entertainment': '娛樂場所',
+    'venue.arcade': '彈珠台 / 遊戲', 'venue.ktv': 'KTV / 卡拉OK',
+    'venue.billiards': '撞球 / 斯諾克', 'venue.mall': '購物中心',
     'diet.veg': '素食', 'diet.vegan': '全素', 'diet.ask': '清真？要問', cash: '現金',
     activityPrompt: '活動名稱？', activityExample: '🍜 一起吃拉麵', activityCreated: '活動開好了！等人加入 🎉',
     joined: '✓ 已加入', full: '額滿', join: '加入', by: '主揪 {name}',
@@ -92,6 +95,7 @@ const messages = {
     navMap: 'Map', navFood: 'Food', navBuddy: 'BuddyUp',
     'type.toilet': 'Toilet', 'type.water': 'Water', 'type.atm': 'ATM',
     'type.food': 'Food', 'type.bike': 'U-Bike', 'type.vending': 'Vending', 'type.gate': 'Entrance', 'type.cat': 'Cat Spot',
+    'type.entertainment': 'Entertainment',
     paused: 'Paused', away: 'away', takeMe: 'Take me there', go: 'Go',
     hasPaper: 'Has paper', hasPaperYes: 'Has paper', hasPaperNo: 'No paper',
     cancel: 'Cancel',
@@ -158,7 +162,9 @@ const messages = {
     distanceMetres: '{count} m away', phraseHint: 'Tap to show this phrase', translationUnavailable: 'Translation unavailable',
     'description.building': 'Campus building', 'description.restaurant': 'Restaurant',
     'description.bikeStation': 'YouBike station · {station}', 'description.entrance': 'Campus entrance', 'description.atm': 'Cash machine',
-    'description.cat': 'Campus cat hangout',
+    'description.cat': 'Campus cat hangout', 'description.entertainment': 'Entertainment venue',
+    'venue.arcade': 'Arcade / games', 'venue.ktv': 'KTV / karaoke',
+    'venue.billiards': 'Billiards / snooker', 'venue.mall': 'Shopping mall',
     'diet.veg': 'Vegetarian', 'diet.vegan': 'Vegan', 'diet.ask': 'Halal? Ask', cash: 'Cash',
     activityPrompt: 'Activity name?', activityExample: '🍜 Eat ramen together', activityCreated: 'Activity created! Waiting for people 🎉',
     joined: '✓ Joined', full: 'Full', join: 'Join', by: 'by {name}', activityFull: 'This activity is full 😢',
@@ -173,6 +179,7 @@ const messages = {
     navMap: '地図', navFood: 'グルメ', navBuddy: '仲間',
     'type.toilet': 'トイレ', 'type.water': '給水機', 'type.atm': 'ATM',
     'type.food': 'グルメ', 'type.bike': 'U-Bike', 'type.vending': '自動販売機', 'type.gate': '入口', 'type.cat': '猫スポット',
+    'type.entertainment': '娯楽',
     paused: '休止中', away: '先', takeMe: 'ここへ行く', go: '行く',
     hasPaper: 'トイレットペーパーあり', hasPaperYes: 'ペーパーあり', hasPaperNo: 'ペーパーなし',
     cancel: 'キャンセル',
@@ -239,7 +246,9 @@ const messages = {
     distanceMetres: '{count} m先', phraseHint: 'タップしてこのフレーズを表示', translationUnavailable: '翻訳なし',
     'description.building': 'キャンパス施設', 'description.restaurant': 'レストラン',
     'description.bikeStation': 'YouBikeステーション · {station}', 'description.entrance': 'キャンパス入口', 'description.atm': 'ATM',
-    'description.cat': 'キャンパス猫スポット',
+    'description.cat': 'キャンパス猫スポット', 'description.entertainment': '娯楽施設',
+    'venue.arcade': 'アーケード / ゲーム', 'venue.ktv': 'KTV / カラオケ',
+    'venue.billiards': 'ビリヤード / スヌーカー', 'venue.mall': 'ショッピングモール',
     'diet.veg': 'ベジタリアン', 'diet.vegan': 'ヴィーガン', 'diet.ask': 'ハラール？要確認', cash: '現金',
     activityPrompt: 'アクティビティ名は？', activityExample: '🍜 一緒にラーメン', activityCreated: '作成しました！参加者を待っています 🎉',
     joined: '✓ 参加済み', full: '満員', join: '参加', by: '主催：{name}', activityFull: 'このアクティビティは満員です 😢',
@@ -424,6 +433,9 @@ export function secondaryName(entity) {
   if (entity.type === 'gate') return t('description.entrance')
   if (entity.type === 'atm') return t('description.atm')
   if (entity.type === 'cat') return t('description.cat')
+  if (entity.type === 'entertainment') return entity.venueKind
+    ? t(`venue.${entity.venueKind}`)
+    : t('description.entertainment')
   return ''
 }
 

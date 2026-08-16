@@ -130,7 +130,8 @@ const added = () => {
 // surveyed spots visible immediately, even before every cloud database has
 // been reseeded. Curated fields win when a cloud record has the same id so a
 // stale cloud photo filename cannot override a bundled asset.
-const curatedPlaces = MOCK.places.filter(place => place.type === 'cat')
+const CURATED_TYPES = new Set(['cat', 'entertainment'])
+const curatedPlaces = MOCK.places.filter(place => CURATED_TYPES.has(place.type))
 
 export const getPlaces = async () => {
   if (usingMock) return [...MOCK.places, ...added()]
