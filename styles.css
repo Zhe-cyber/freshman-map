@@ -41,7 +41,11 @@ html,body{margin:0;height:100%;overflow:hidden;background:#eef4f1;color:var(--in
 
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.category-menu{top:74px;padding:0 14px;display:flex;flex-direction:column;align-items:flex-start}
+/* .hud sets z-index:5, which makes a stacking context — the sidebar inside it
+   cannot rise above the scrim on its own, however high its own z-index. This
+   menu's whole context has to clear the scrim instead. */
+.category-menu{top:74px;padding:0 14px;display:flex;flex-direction:column;align-items:flex-start;
+  z-index:41}
 .category-toggle{height:42px;border:0;border-radius:14px;background:var(--card);color:var(--ink);
   box-shadow:var(--sh);font:800 13px/1 inherit;padding:0 12px;display:flex;align-items:center;
   gap:8px;cursor:pointer}

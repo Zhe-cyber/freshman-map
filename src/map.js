@@ -257,6 +257,10 @@ function buildChips() {
   box.querySelector('.category-toggle').onclick = () =>
     setCategoryMenu(box.querySelector('.category-toggle').getAttribute('aria-expanded') !== 'true')
 
+  // buildChips also runs on a language change, so the scrim has to be brought
+  // back in step with whatever state the panel was rebuilt in.
+  const scrim = document.getElementById('sidebar-scrim')
+  if (scrim) scrim.hidden = !wasOpen
   if (wasOpen) paintProfile()
 }
 
