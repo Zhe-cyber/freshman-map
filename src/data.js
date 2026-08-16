@@ -30,6 +30,13 @@ const I = (itemId, buildingId, floor, type, landmark, note, paper, photo) => ({
   photo: typeof photo === 'string' ? photo : null
 })
 
+// hoursFromNow keeps seeded activities in the future no matter when you seed.
+const A = (activityId, icon, title, category, place, hostName, capacity, joined, hoursFromNow, description) => ({
+  campusId: 'cycu', activityId, icon, title, category, place, hostName, capacity, joined, description,
+  startAt: new Date(Date.now() + hoursFromNow * 3600e3).toISOString(),
+  joinedByMe: false
+})
+
 export const MOCK = {
   buildings: [
     B('lib',  '張靜愚紀念圖書館', 'Library',                  24.958309, 121.240707),
@@ -233,17 +240,21 @@ export const MOCK = {
   lat:24.9539203, lng:121.2416645 }
   ],
 
+  // startAt is a real timestamp, not a display string — a countdown, sorting,
+  // "starting soon" and auto-expiry all need arithmetic, which "今晚 19:00" cannot
+  // give you. Seeded relative to now so the demo data is never in the past;
+  // reseed on the morning of the demo.
   activities: [
-    { campusId:'cycu', activityId:'a1', icon:'🍲', title:'火鍋 Hotpot', place:'中原夜市',
-      when:'今晚 19:00 tonight', hostName:'Wei', capacity:4, joined:3, joinedByMe:false },
-    { campusId:'cycu', activityId:'a2', icon:'🏸', title:'羽球 Badminton', place:'體育館',
-      when:'明天 16:00 tomorrow', hostName:'Aina', capacity:6, joined:2, joinedByMe:false },
-    { campusId:'cycu', activityId:'a3', icon:'🚲', title:'YouBike 河濱 ride', place:'正門集合',
-      when:'週六 07:30 Sat', hostName:'Ming', capacity:4, joined:1, joinedByMe:false },
-    { campusId:'cycu', activityId:'a4', icon:'🎤', title:'KTV', place:'中壢 SOGO',
-      when:'週五 20:00 Fri', hostName:'Jun', capacity:6, joined:5, joinedByMe:false },
-    { campusId:'cycu', activityId:'a5', icon:'🌙', title:'夜市巡禮 crawl', place:'中原夜市',
-      when:'今晚 21:00 tonight', hostName:'Sara', capacity:4, joined:4, joinedByMe:false }
+    A('a1', '🍲', '火鍋 Hotpot',            'hotpot',  '中原夜市',        'Wei',  4, 3,  5,
+      '一起吃火鍋！第一次來的可以跟著我們點餐。'),
+    A('a2', '🏸', '羽球 Badminton',          'sport',   '體育館',          'Aina', 6, 2, 22,
+      '帶球拍就好，球我帶。新手歡迎。'),
+    A('a3', '🚲', 'YouBike 河濱 ride',       'outdoor', '正門集合',        'Ming', 4, 1, 30,
+      '騎去河濱公園，大概兩小時，慢慢騎。'),
+    A('a4', '🎤', 'KTV',                     'night',   '中壢 SOGO',       'Jun',  6, 5, 46,
+      '唱到十二點，均分費用大概每人 200。'),
+    A('a5', '🌙', '夜市巡禮 night market',   'food',    '中原夜市',        'Sara', 4, 4,  8,
+      '從校門口走到底，把必吃的都吃一遍。')
   ]
 }
 

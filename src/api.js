@@ -222,19 +222,26 @@ export async function joinActivity(activityId) {
   return a
 }
 
-// Create activity
-export async function createActivity(title) {
+// Create activity.
+//
+// Takes the whole draft from the create form. startAt is an ISO timestamp, not
+// a display string: the countdown, sorting and auto-expiry are arithmetic, and
+// "今晚 tonight" cannot be subtracted from anything.
+export async function createActivity(draft) {
   const a = {
     campusId,
     activityId: 'a' + Date.now(),
-    icon: '🎉',
-    title,
-    place: '中原夜市',
-    when: '今晚 tonight',
-    hostName: user.name || 'You',
-    userId: user.userId,
-    capacity: 4,
+    icon: draft.icon || '🎉',
+    title: draft.title,
+    category: draft.category || 'other',
+    place: draft.place || '',
+    startAt: draft.startAt || new Date(Date.now() + 2 * 3600e3).toISOString(),
+    description: draft.description || '',
+    hostName: draft.hostName || user.name || 'You',
+    userId: draft.userId || user.userId,
+    capacity: draft.capacity || 4,
     joined: 1,
+    joinedBy: [user.userId],
     joinedByMe: true
   }
 

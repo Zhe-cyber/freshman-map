@@ -13,6 +13,15 @@ const messages = {
     paused: '暫停', away: '公尺', takeMe: '帶我去', go: '帶我去',
     hasPaper: '有衛生紙', hasPaperYes: '有紙', hasPaperNo: '沒紙',
     cancel: '取消',
+    actNew: '開一個活動', actTitle: '要做什麼', actCategory: '種類', actPlace: '在哪裡',
+    actWhen: '幾點', actCapacity: '幾個人', actDescription: '說明（選填）',
+    actDescriptionHint: '例如：新手歡迎，帶球拍就好', actCreate: '開好了',
+    actNeedFields: '名稱、地點、時間都要填', actNeedFuture: '時間要在未來',
+    actEnded: '已結束', actHappeningNow: '進行中', actInMinutes: '{count} 分鐘後',
+    actInHours: '{h} 小時 {m} 分後', actInDay: '明天', actInDays: '{count} 天後',
+    actPast: '已結束（{count}）', actWhoComing: '誰要去', actYou: '你', actStudent: '同學', actHost: '主揪',
+    actCancel: '取消這個活動', actCancelConfirm: '確定要取消嗎？', actCancelled: '已取消',
+    actNoneTitle: '現在沒有活動', actNoneSub: '開第一個吧，一個人吃飯很無聊',
     appName: '新生包', loginTagline: '幾天內熟悉中原生活',
     loginUsername: '帳號', loginPassword: '密碼', loginName: '你的名字',
     loginPasswordHint: '至少 8 個字，要有數字', loginSignIn: '登入', loginCreate: '建立帳號',
@@ -60,6 +69,15 @@ const messages = {
     paused: 'Paused', away: 'away', takeMe: 'Take me there', go: 'Go',
     hasPaper: 'Has paper', hasPaperYes: 'Has paper', hasPaperNo: 'No paper',
     cancel: 'Cancel',
+    actNew: 'Start an activity', actTitle: 'What are you doing', actCategory: 'Kind', actPlace: 'Where',
+    actWhen: 'When', actCapacity: 'How many people', actDescription: 'Details (optional)',
+    actDescriptionHint: 'e.g. beginners welcome, just bring a racket', actCreate: 'Create',
+    actNeedFields: 'Name, place and time are all needed', actNeedFuture: 'Pick a time in the future',
+    actEnded: 'Ended', actHappeningNow: 'Happening now', actInMinutes: 'in {count} min',
+    actInHours: 'in {h}h {m}m', actInDay: 'tomorrow', actInDays: 'in {count} days',
+    actPast: 'Finished ({count})', actWhoComing: "Who's coming", actYou: 'You', actStudent: 'a student', actHost: 'host',
+    actCancel: 'Cancel this activity', actCancelConfirm: 'Cancel this activity?', actCancelled: 'Cancelled',
+    actNoneTitle: 'Nothing on right now', actNoneSub: 'Start the first one — eating alone is no fun',
     appName: 'Freshman Map', loginTagline: 'Settle into CYCU in days, not weeks',
     loginUsername: 'Username', loginPassword: 'Password', loginName: 'Your name',
     loginPasswordHint: 'At least 8 characters, including a number', loginSignIn: 'Sign in', loginCreate: 'Create account',
@@ -106,6 +124,15 @@ const messages = {
     paused: '休止中', away: '先', takeMe: 'ここへ行く', go: '行く',
     hasPaper: 'トイレットペーパーあり', hasPaperYes: 'ペーパーあり', hasPaperNo: 'ペーパーなし',
     cancel: 'キャンセル',
+    actNew: 'アクティビティを作る', actTitle: '何をする？', actCategory: '種類', actPlace: '場所',
+    actWhen: '日時', actCapacity: '人数', actDescription: '説明（任意）',
+    actDescriptionHint: '例：初心者歓迎、ラケットだけ持参', actCreate: '作成',
+    actNeedFields: '名前・場所・日時は必須です', actNeedFuture: '未来の時間を選んでください',
+    actEnded: '終了', actHappeningNow: '開催中', actInMinutes: 'あと{count}分',
+    actInHours: 'あと{h}時間{m}分', actInDay: '明日', actInDays: 'あと{count}日',
+    actPast: '終了（{count}）', actWhoComing: '参加者', actYou: 'あなた', actStudent: '学生', actHost: '主催',
+    actCancel: 'このアクティビティを取り消す', actCancelConfirm: '取り消しますか？', actCancelled: '取り消しました',
+    actNoneTitle: '今は何もありません', actNoneSub: '最初の一つを作ってみよう',
     appName: '新生パック', loginTagline: '数日で中原の生活に慣れる',
     loginUsername: 'ユーザー名', loginPassword: 'パスワード', loginName: 'お名前',
     loginPasswordHint: '8文字以上、数字を含む', loginSignIn: 'ログイン', loginCreate: 'アカウント作成',
@@ -326,7 +353,10 @@ export function localText(value) {
   if (content[language]?.[value]) return content[language][value]
   const parts = value.split(' · ')
   if (parts.length > 1) return language === 'zh-Hant' ? parts[0] : parts[parts.length - 1]
-  if (language === 'en' && /\p{Script=Han}/u.test(value)) return t('translationUnavailable')
+  // Fall back to the original, not "Translation unavailable". This handles
+  // survey and user content — restaurant names, activity descriptions — where
+  // untranslated Chinese is far more useful than a placeholder that erases the
+  // information entirely. Same reasoning as the basemap labels.
   return value
 }
 
