@@ -4,27 +4,39 @@ import { getPlaces, me, metres, navTo, score, tone, toneText } from './api.js'
 import { localName, onLanguageChange, secondaryName, t } from './i18n.js'
 
 const CUISINES = [
-  'nightMarket', 'vegetarian', 'malaysian', 'indonesian',
-  'vietnamese', 'thai', 'taiwanese', 'dessert', 'other'
+  'taiwanese', 'japanese', 'korean', 'nightMarket', 'thai',
+  'malaysian', 'indonesian', 'vietnamese', 'vegetarian', 'dessert', 'other'
 ]
-const PRICES = ['all', 1, 2, 3]
 const VENUE_KINDS = ['arcade', 'ktv', 'billiards', 'mall']
+const PRICE_MIN = 0
+const PRICE_MAX = 500
+const PRICE_STEP = 50
 
 const cuisineById = new Map(
   MOCK.places.filter(place => place.type === 'food')
     .map(place => [place.placeId, place.cuisine || 'other'])
 )
+const priceById = new Map(
+  MOCK.places.filter(place => place.type === 'food')
+    .map(place => [place.placeId, place.priceEstimate])
+)
 
 let places = []
 let currentView = 'food'
 let currentCuisine = 'all'
-let currentPrice = 'all'
+let currentMinPrice = PRICE_MIN
+let currentMaxPrice = PRICE_MAX
 let currentVenue = 'all'
 
 const html = value => String(value ?? '').replace(/[&<>"']/g, character =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
 
 const cuisineOf = place => place.cuisine || cuisineById.get(place.placeId) || 'other'
+const priceOf = place => place.priceEstimate || priceById.get(place.placeId) ||
+  ({ 1: 100, 2: 200, 3: 350 }[place.price] || 200)
+const ratingOf = place => (Number(place.yes) || 0) + (Number(place.no) || 0)
+  ? score(place)
+  : null
 
 export async function initFood() {
   places = await getPlaces()
@@ -67,12 +79,7 @@ function renderFilters() {
       [['all', t('filterAll')], ...cuisineChoices.map(cuisine => [cuisine, t(`cuisine.${cuisine}`)])],
       currentCuisine,
       'cuisine'
-    ) + filterGroup(
-      t('priceFilter'),
-      PRICES.map(price => [String(price), price === 'all' ? t('filterAll') : t(`price.${price}`)]),
-      String(currentPrice),
-      'price'
-    )
+    ) + priceRange()
   } else {
     filters.innerHTML = filterGroup(
       t('venueFilter'),
@@ -85,15 +92,10 @@ function renderFilters() {
   filters.querySelectorAll('[data-cuisine]').forEach(button => {
     button.onclick = () => { currentCuisine = button.dataset.cuisine; render() }
   })
-  filters.querySelectorAll('[data-price]').forEach(button => {
-    button.onclick = () => {
-      currentPrice = button.dataset.price === 'all' ? 'all' : Number(button.dataset.price)
-      render()
-    }
-  })
   filters.querySelectorAll('[data-venue]').forEach(button => {
     button.onclick = () => { currentVenue = button.dataset.venue; render() }
   })
+  wirePriceRange()
 }
 
 function filterGroup(label, choices, selected, attribute) {
@@ -106,12 +108,63 @@ function filterGroup(label, choices, selected, attribute) {
   </div>`
 }
 
+function priceRange() {
+  const minPercent = currentMinPrice / PRICE_MAX * 100
+  const maxPercent = currentMaxPrice / PRICE_MAX * 100
+  return `<div class="filter-group price-filter">
+    <div class="price-filter-head">
+      <span class="filter-label">${html(t('priceFilter'))}</span>
+      <output id="price-range-output">${html(t('priceRangeValue', {
+        min: currentMinPrice,
+        max: currentMaxPrice
+      }))}</output>
+    </div>
+    <div class="dual-range" id="price-range" style="--range-min:${minPercent}%;--range-max:${maxPercent}%">
+      <div class="range-rail"></div><div class="range-fill"></div>
+      <input id="price-min" type="range" min="${PRICE_MIN}" max="${PRICE_MAX}"
+        step="${PRICE_STEP}" value="${currentMinPrice}" aria-label="${html(t('minimumPrice'))}">
+      <input id="price-max" type="range" min="${PRICE_MIN}" max="${PRICE_MAX}"
+        step="${PRICE_STEP}" value="${currentMaxPrice}" aria-label="${html(t('maximumPrice'))}">
+    </div>
+    <div class="range-scale"><span>NT$${PRICE_MIN}</span><span>NT$${PRICE_MAX}+</span></div>
+  </div>`
+}
+
+function wirePriceRange() {
+  const minInput = document.getElementById('price-min')
+  const maxInput = document.getElementById('price-max')
+  if (!minInput || !maxInput) return
+
+  const update = changed => {
+    let nextMin = Number(minInput.value)
+    let nextMax = Number(maxInput.value)
+    if (nextMin > nextMax - PRICE_STEP) {
+      if (changed === 'min') nextMin = nextMax - PRICE_STEP
+      else nextMax = nextMin + PRICE_STEP
+    }
+    currentMinPrice = Math.max(PRICE_MIN, nextMin)
+    currentMaxPrice = Math.min(PRICE_MAX, nextMax)
+    minInput.value = currentMinPrice
+    maxInput.value = currentMaxPrice
+    const range = document.getElementById('price-range')
+    range.style.setProperty('--range-min', `${currentMinPrice / PRICE_MAX * 100}%`)
+    range.style.setProperty('--range-max', `${currentMaxPrice / PRICE_MAX * 100}%`)
+    document.getElementById('price-range-output').textContent = t('priceRangeValue', {
+      min: currentMinPrice,
+      max: currentMaxPrice
+    })
+    renderRestaurants()
+  }
+  minInput.oninput = () => update('min')
+  maxInput.oninput = () => update('max')
+}
+
 function renderRestaurants() {
   const list = places
     .filter(place => place.type === 'food')
     .filter(place => currentCuisine === 'all' || cuisineOf(place) === currentCuisine)
-    .filter(place => currentPrice === 'all' || place.price === currentPrice)
-    .sort((a, b) => score(b) - score(a))
+    .filter(place => priceOf(place) >= currentMinPrice && priceOf(place) <= currentMaxPrice)
+    .sort((a, b) => (ratingOf(b) ?? -1) - (ratingOf(a) ?? -1))
 
   const output = document.getElementById('flist')
   if (!list.length) {
@@ -120,7 +173,12 @@ function renderRestaurants() {
   }
 
   output.innerHTML = list.map(place => {
-    const rating = score(place)
+    const rating = ratingOf(place)
+    const englishBadge = rating === null
+      ? `<span class="eng unknown">${html(t('englishUnknown'))}</span>`
+      : `<span class="eng" style="background:${tone(rating)}22;color:${toneText(rating)}">
+          ${html(t('orderEnglish'))} ${Math.round(rating / 10)}/10
+        </span>`
     return `<div class="card place-card restaurant-card" data-place="${place.placeId}"
       role="link" tabindex="0" aria-label="${html(t('navigateTo', { place: localName(place) }))}">
       <div class="frow">
@@ -133,9 +191,7 @@ function renderRestaurants() {
       </div>
       <div class="fmeta">
         <span>🚶 ${html(t('distanceMetres', { count: metres(me, place) }))}</span>
-        <span class="eng" style="background:${tone(rating)}22;color:${toneText(rating)}">
-          ${html(t('orderEnglish'))} ${Math.round(rating / 10)}/10
-        </span>
+        ${englishBadge}
       </div>
       ${navigateRow()}
     </div>`
@@ -178,7 +234,7 @@ function foodTags(place) {
     .map(diet => `<span class="tag ${DIET[diet][1]}">${html(t(`diet.${diet}`))}</span>`)
     .join('')
   return `<span class="tag t-cuisine">${html(t(`cuisine.${cuisineOf(place)}`))}</span>` +
-    `<span class="tag t-price">${html(t(`price.${place.price || 1}`))}</span>` +
+    `<span class="tag t-price">${html(t('estimatedPrice', { price: priceOf(place) }))}</span>` +
     dietTags + (place.cash ? `<span class="tag t-cash">${html(t('cash'))}</span>` : '')
 }
 
