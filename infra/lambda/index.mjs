@@ -453,7 +453,12 @@ export const handler = async (event) => {
         const allowed = ['displayName', 'avatar', 'homeCountry',
                          'department', 'year', 'languages', 'interests', 'bio']
         const card = { userId, updatedAt: new Date().toISOString() }
-        for (const k of allowed) if (body[k]) card[k] = String(body[k]).slice(0, 4000)
+        // avatar is a data URI, not a word — a 96px JPEG is ~5-8k chars. The
+        // 4000 cap that fits text fields silently truncated it into broken
+        // base64, so every published picture failed to render.
+        for (const k of allowed) {
+          if (body[k]) card[k] = String(body[k]).slice(0, k === 'avatar' ? 24000 : 4000)
+        }
 
         await db.send(new PutCommand({
           TableName: TABLE,

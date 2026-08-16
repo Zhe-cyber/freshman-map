@@ -16,6 +16,7 @@ import { t, onLanguageChange } from './i18n.js'
 
 const KEY = 'freshmanmap.profile.' + campusId
 const AVATAR_PX = 256
+const SHARE_PX = 96          // what other people see: a 20px chip and a 56px card
 
 const FIELDS = [
   // key            required  type      max
@@ -172,6 +173,18 @@ export async function render() {
   root.querySelector('#pf-save').onclick = save
 }
 
+// The shareable subset, so people can see who is organising or joining an
+// activity before they commit. The whitelist lives in the Lambda as well —
+// this side decides what to send, that side decides what to store.
+//
+// The 96px copy goes up, not the 256px one. It is shown at 20px in a chip and
+// 56px in a card, and eight of them load on one screen.
+const publish = p => publishProfile({
+  displayName: p.displayName, avatar: p.avatarSmall || p.avatar,
+  homeCountry: p.homeCountry, department: p.department, year: p.year,
+  languages: p.languages, interests: p.interests, bio: p.bio
+})
+
 async function save() {
   const p = loadProfile()
   for (const [key] of FIELDS) {
@@ -182,15 +195,8 @@ async function save() {
   saveProfile(p)
   setUserName(p.displayName)          // chat and hosting use this name
 
-  // Publish the shareable subset so people can see who is organising or
-  // joining an activity before they commit. The whitelist lives in the Lambda
-  // as well — this side decides what to send, that side decides what to store.
   try {
-    await publishProfile({
-      displayName: p.displayName, avatar: p.avatar, homeCountry: p.homeCountry,
-      department: p.department, year: p.year, languages: p.languages,
-      interests: p.interests, bio: p.bio
-    })
+    await publish(p)
   } catch { /* offline or not signed in — the local profile still saved */ }
 
   await render()
@@ -199,6 +205,18 @@ async function save() {
 
 // A 4000x3000 phone photo is several MB; localStorage holds about 5 MB total.
 // Downscale to a square thumbnail before storing, or one upload fills the quota.
+// Centre-crop to a square of px, so a portrait photo is not squashed.
+function square(img, side, px) {
+  const canvas = document.createElement('canvas')
+  canvas.width = canvas.height = px
+  canvas.getContext('2d').drawImage(
+    img,
+    (img.width - side) / 2, (img.height - side) / 2, side, side,
+    0, 0, px, px
+  )
+  return canvas
+}
+
 function pickAvatar(file) {
   if (!file) return
   if (!file.type.startsWith('image/')) return toast(t('profileNeedImage'))
@@ -208,20 +226,18 @@ function pickAvatar(file) {
     const img = new Image()
     img.onload = () => {
       const side = Math.min(img.width, img.height)
-      const canvas = document.createElement('canvas')
-      canvas.width = canvas.height = AVATAR_PX
-      canvas.getContext('2d').drawImage(
-        img,
-        (img.width - side) / 2, (img.height - side) / 2, side, side,
-        0, 0, AVATAR_PX, AVATAR_PX
-      )
+      const canvas = square(img, side, AVATAR_PX)
       const p = loadProfile()
       p.avatar = canvas.toDataURL('image/jpeg', 0.8)
+      p.avatarSmall = square(img, side, SHARE_PX).toDataURL('image/jpeg', 0.7)
       try {
         saveProfile(p)
       } catch {
         return toast(t('profilePhotoTooBig'))
       }
+      // Publish straight away. Waiting for Save meant a photo picked on its own
+      // never reached anyone — the picture looked set but nobody could see it.
+      if (p.displayName) publish(p).catch(() => {})
       render()
       toast(t('profilePhotoSaved'))
     }

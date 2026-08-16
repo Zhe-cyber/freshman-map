@@ -175,7 +175,11 @@ function card(a) {
     const label = c?.displayName || shortName(id)
     return c
       ? `<button class="who-chip" data-who="${html(id)}">${
-          c.avatar ? `<img src="${c.avatar}" alt="">` : '<span class="who-dot"></span>'
+          // A picture published before the size fix is truncated base64 and
+          // will not decode. Drop it rather than show a broken-image icon.
+          c.avatar
+            ? `<img src="${c.avatar}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'who-dot'}))">`
+            : '<span class="who-dot"></span>'
         }${html(label)}</button>`
       : `<span class="who-chip flat">${html(label)}</span>`
   }
@@ -269,7 +273,7 @@ function showCard(userId) {
   openSheet(`
     <div class="head">
       <div class="cardpic">${c.avatar
-        ? `<img src="${c.avatar}" alt="">`
+        ? `<img src="${c.avatar}" alt="" onerror="this.remove()">`
         : html((c.displayName || '?').slice(0, 1))}</div>
       <div><div class="name">${html(c.displayName || t('profileNoName'))}</div>
         ${c.bio ? `<div class="sub">${html(c.bio)}</div>` : ''}</div>
