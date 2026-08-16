@@ -167,29 +167,46 @@ function card(a) {
   const full = joined >= capacity && !a.joinedByMe
   const mine = a.hostName && a.hostName === (user.name || user.username)
 
-  const seats = Array.from({ length: Math.min(capacity, 12) }, (_, i) =>
-    `<div class="seat${i < joined ? ' on' : ''}">${i < joined ? '🙂' : ''}</div>`).join('')
-
+  // One row of real people instead of a row of identical smileys and a
+  // separate row of names saying the same thing. A face is clickable when we
+  // have a card for it, so you can read someone before deciding to join.
   const person = id => {
     const c = cards.get(id)
     const label = c?.displayName || shortName(id)
-    return c
-      ? `<button class="who-chip" data-who="${html(id)}">${
+    const tag = c ? 'button' : 'span'
+    // The organiser is inside joinedBy too, so crown them here rather than
+    // printing the same person twice.
+    const crown = id && id === a.userId ? '<span class="fcrown">👑</span>' : ''
+    return `<${tag} class="face${c ? '' : ' flat'}"${c ? ` data-who="${html(id)}"` : ''} title="${html(label)}">
+        <span class="fdisc">${crown}${
           // A picture published before the size fix is truncated base64 and
-          // will not decode. Drop it rather than show a broken-image icon.
-          c.avatar
-            ? `<img src="${c.avatar}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'who-dot'}))">`
-            : '<span class="who-dot"></span>'
-        }${html(label)}</button>`
-      : `<span class="who-chip flat">${html(label)}</span>`
+          // cannot decode. Fall back to the initial rather than a broken icon.
+          c?.avatar
+            ? `<img src="${c.avatar}" alt="" onerror="this.replaceWith(document.createTextNode('${
+                html(label.slice(0, 1)).replace(/'/g, '')}'))">`
+            : html(label.slice(0, 1))
+        }</span>
+        <span class="fname2">${html(label)}</span>
+      </${tag}>`
   }
 
-  const host = a.userId ? person(a.userId) : html(a.hostName || '—')
+  const host = a.userId ? cards.get(a.userId)?.displayName || shortName(a.userId)
+                        : a.hostName || '—'
 
-  const who = (a.joinedBy || []).length
-    ? `<div class="who"><span class="wholabel">${t('actWhoComing')}</span>
-        ${a.joinedBy.slice(0, 8).map(person).join('')}${a.joinedBy.length > 8 ? ' …' : ''}</div>`
-    : ''
+  const going = (a.joinedBy || []).slice(0, 8)
+  const spare = Math.max(0, Math.min(capacity, 8) - going.length)
+
+  const who = `<div class="who">
+      <div class="wholabel">${t('actWhoComing')} · ${joined}/${capacity}</div>
+      <div class="faces">
+        ${going.map(person).join('')}
+        ${Array.from({ length: spare }, () =>
+          '<span class="face empty"><span class="fdisc"></span></span>').join('')}
+        ${(a.joinedBy || []).length > 8
+          ? `<span class="face flat"><span class="fdisc">+${a.joinedBy.length - 8}</span></span>`
+          : ''}
+      </div>
+    </div>`
 
   const label = a.joinedByMe ? `✓ ${t('joined')}` : full ? t('full') : t('join')
   const cls = a.joinedByMe ? 'done' : full ? 'full' : ''
@@ -199,16 +216,18 @@ function card(a) {
       <div class="aic">${html(a.icon || '🎉')}</div>
       <div style="flex:1">
         <div class="fname">${html(localText(a.title))}</div>
-        <div class="fsub">🕒 ${html(clockTime(a))} · 📍 ${html(a.place || '')}</div>
-        <div class="fsub">${t('by')} ${host}</div>
+        <div class="fsub">${t('by')} ${html(host)}</div>
       </div>
       <div class="acol">
         <span class="cdown ${p}">${html(countdown(a))}</span>
         <button class="abtn ${cls}" data-join="${html(a.activityId)}" ${full ? 'disabled' : ''}>${label}</button>
       </div>
     </div>
+    <div class="awhen">
+      <span class="wbit"><b>🕒</b>${html(clockTime(a))}</span>
+      ${a.place ? `<span class="wbit"><b>📍</b>${html(a.place)}</span>` : ''}
+    </div>
     ${a.description ? `<div class="adesc">${html(localText(a.description))}</div>` : ''}
-    <div class="seats">${seats}<span class="scount">${joined} / ${capacity}</span></div>
     ${who}
     ${a.joinedByMe ? `<button class="linkbtn" data-chat="${html(a.activityId)}">💬 ${t('chatOpen')}</button>` : ''}
     ${mine ? `<button class="linkbtn quiet" data-del="${html(a.activityId)}">${t('actCancel')}</button>` : ''}

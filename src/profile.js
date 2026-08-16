@@ -195,12 +195,18 @@ async function save() {
   saveProfile(p)
   setUserName(p.displayName)          // chat and hosting use this name
 
+  // Swallowing this was the bug behind "I saved my profile but nobody can see
+  // it" — the local save succeeded, the upload did not, and nothing said so.
+  let shared = true
   try {
     await publish(p)
-  } catch { /* offline or not signed in — the local profile still saved */ }
+  } catch (e) {
+    shared = false
+    console.error('profile publish failed', e)
+  }
 
   await render()
-  toast(t('profileSaved'))
+  toast(shared ? t('profileSaved') : t('profileShareFail'))
 }
 
 // A 4000x3000 phone photo is several MB; localStorage holds about 5 MB total.
@@ -237,9 +243,14 @@ function pickAvatar(file) {
       }
       // Publish straight away. Waiting for Save meant a photo picked on its own
       // never reached anyone — the picture looked set but nobody could see it.
-      if (p.displayName) publish(p).catch(() => {})
       render()
-      toast(t('profilePhotoSaved'))
+      if (p.displayName) {
+        publish(p).then(
+          () => toast(t('profilePhotoSaved')),
+          e => { console.error('avatar publish failed', e); toast(t('profileShareFail')) })
+      } else {
+        toast(t('profilePhotoSaved'))
+      }
     }
     img.onerror = () => toast(t('profileNeedImage'))
     img.src = reader.result
