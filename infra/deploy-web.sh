@@ -42,6 +42,7 @@ BUILD=infra/.web
 rm -rf "$BUILD"; mkdir -p "$BUILD/site"
 cp index.html styles.css "$BUILD/site/"
 cp -r src "$BUILD/site/"
+if [ -d assets ]; then cp -r assets "$BUILD/site/"; fi
 
 # Packaging is fussier than it looks — two things break Amplify silently, and
 # in both cases index.html serves fine while every module 404s:

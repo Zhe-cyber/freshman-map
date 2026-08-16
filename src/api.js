@@ -31,8 +31,11 @@ export const campus = CAMPUSES[campusId] || CAMPUSES.cycu
 // Where the survey photos live.
 const PHOTO_BASE = 'https://freshmanmap-photos-893670131810.s3.us-east-1.amazonaws.com/'
 
-export const photoUrl = file =>
-  file ? PHOTO_BASE + encodeURIComponent(file) : null
+export const photoUrl = file => {
+  if (!file) return null
+  if (/^(https?:)?\/\//.test(file) || file.startsWith('/') || file.startsWith('./')) return file
+  return PHOTO_BASE + encodeURIComponent(file)
+}
 
 // Identity
 import { currentUser } from './auth.js'
@@ -125,15 +128,22 @@ const added = () => {
 
 // Curated map spots ship with the frontend as a fallback. This keeps newly
 // surveyed spots visible immediately, even before every cloud database has
-// been reseeded. A cloud record with the same id always wins.
+// been reseeded. Curated fields win when a cloud record has the same id so a
+// stale cloud photo filename cannot override a bundled asset.
 const curatedPlaces = MOCK.places.filter(place => place.type === 'cat')
 
 export const getPlaces = async () => {
   if (usingMock) return [...MOCK.places, ...added()]
 
   const cloudPlaces = await call('/places')
+  const curatedById = new Map(curatedPlaces.map(place => [place.placeId, place]))
   const cloudIds = new Set(cloudPlaces.map(place => place.placeId))
-  return [...cloudPlaces, ...curatedPlaces.filter(place => !cloudIds.has(place.placeId))]
+  return [
+    ...cloudPlaces.map(place => curatedById.has(place.placeId)
+      ? { ...place, ...curatedById.get(place.placeId) }
+      : place),
+    ...curatedPlaces.filter(place => !cloudIds.has(place.placeId))
+  ]
 }
 
 export async function createPlace(draft) {

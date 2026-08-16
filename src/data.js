@@ -208,7 +208,7 @@ export const MOCK = {
 
     { placeId:'cat1', type:'cat', icon:'🐈', name:'橘貓休息點',
       en:'Orange Cat Resting Spot', ja:'茶トラの休憩スポット',
-      lat:24.9581130, lng:121.2437261, photo:'cat-spot-1.jpg' },
+      lat:24.9581130, lng:121.2437261, photo:'./assets/cat-spot-1.jpg' },
 
 // ATM locations surveyed by the project team
 { placeId:'c1', type:'atm', name:'ATM 1', en:'ATM 1',
