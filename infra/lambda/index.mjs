@@ -285,12 +285,16 @@ export const handler = async (event) => {
           'a-' + Date.now(),
 
         // Creator becomes the first participant.
-        joined: userId ? 1 : 0,
+        //
+        // joinedBy must be a string SET, matching what the join endpoint's
+        // atomic ADD expects and what the seeder writes. A List here would
+        // make the first join fail with "incorrect data type".
+        //
+        // DynamoDB rejects empty sets, so with no creator the attribute is
+        // left off entirely rather than written empty.
+        ...(userId ? { joinedBy: new Set([userId]) } : {}),
 
-        joinedBy:
-          userId
-            ? [userId]
-            : [],
+        joined: userId ? 1 : 0,
 
         createdAt:
           new Date().toISOString()
@@ -376,22 +380,27 @@ export const handler = async (event) => {
       }
 
       // Toggle membership.
-      const nextJoinedBy = already
-        ? joined.filter(
-            id => id !== userId
-          )
-        : [...joined, userId]
-
+      //
+      // This MUST be an atomic set operation, not read-modify-write. With
+      // 'SET joinedBy = <list built in Lambda>', sixty people tapping Join at
+      // once all read the same list, each appends only themselves, and each
+      // overwrites the others — a load test lost 55 of 60 joins while every
+      // request returned 200. It passes sequential testing, which is why it
+      // looks fine by hand.
+      //
+      // ADD and DELETE on a string set are applied by DynamoDB itself, so
+      // concurrent joins cannot clobber each other.
       const updated = await db.send(
         new UpdateCommand({
           TableName: TABLE,
           Key: key,
 
-          UpdateExpression:
-            'SET joinedBy = :joinedBy',
+          UpdateExpression: already
+            ? 'DELETE joinedBy :u'
+            : 'ADD joinedBy :u',
 
           ExpressionAttributeValues: {
-            ':joinedBy': nextJoinedBy
+            ':u': new Set([userId])
           },
 
           ReturnValues: 'ALL_NEW'
