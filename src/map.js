@@ -36,6 +36,7 @@ export async function initMap() {
   places.forEach(addPlacePin)
   addMePin()
   buildChips()
+  wireCategoryMenu()
   onLanguageChange(renderLanguage)
 
   labelsByZoom()
@@ -194,18 +195,56 @@ const shown = b => itemsIn(b.buildingId).filter(i => active.has(i.type))
 
 function buildChips() {
   const box = document.getElementById('chips')
-  box.innerHTML = ''
+  const wasOpen = box.querySelector('.category-toggle')?.getAttribute('aria-expanded') === 'true'
+  box.innerHTML = `<button type="button" class="category-toggle" aria-expanded="${wasOpen}" aria-controls="category-options">
+      <span aria-hidden="true">☰</span>
+      <span>${html(tr('categoryMenu'))}</span>
+      <span class="category-count">${active.size}/${Object.keys(TYPES).length}</span>
+      <span class="category-chevron" aria-hidden="true">›</span>
+    </button>
+    <div class="category-panel${wasOpen ? ' open' : ''}" id="category-options" role="group" aria-label="${html(tr('categoryMenu'))}"></div>`
+  const panel = box.querySelector('.category-panel')
   Object.entries(TYPES).forEach(([k, type]) => {
     const b = document.createElement('button')
+    b.type = 'button'
     b.className = 'chip'; b.dataset.on = active.has(k) ? '1' : '0'
+    b.setAttribute('aria-pressed', String(active.has(k)))
     b.innerHTML = `<span>${type.icon}</span>`
     b.append(document.createTextNode(tr(`type.${k}`)))
     b.onclick = () => {
       active.has(k) ? (active.delete(k), b.dataset.on = '0') : (active.add(k), b.dataset.on = '1')
+      b.setAttribute('aria-pressed', String(active.has(k)))
+      box.querySelector('.category-count').textContent = `${active.size}/${Object.keys(TYPES).length}`
       filter()
     }
-    box.appendChild(b)
+    panel.appendChild(b)
   })
+
+  box.querySelector('.category-toggle').onclick = () => {
+    const toggle = box.querySelector('.category-toggle')
+    const open = toggle.getAttribute('aria-expanded') !== 'true'
+    toggle.setAttribute('aria-expanded', String(open))
+    panel.classList.toggle('open', open)
+  }
+}
+
+function wireCategoryMenu() {
+  document.addEventListener('click', event => {
+    const box = document.getElementById('chips')
+    if (box.contains(event.target)) return
+    closeCategoryMenu()
+  })
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeCategoryMenu()
+  })
+}
+
+function closeCategoryMenu() {
+  const box = document.getElementById('chips')
+  const toggle = box.querySelector('.category-toggle')
+  if (!toggle) return
+  toggle.setAttribute('aria-expanded', 'false')
+  box.querySelector('.category-panel')?.classList.remove('open')
 }
 
 function filter() {

@@ -10,7 +10,8 @@ export const TYPES = {
   food:   { label: '美食',   en: 'Food',     icon: '🍜', color: '#ff8a3d' },
   bike:   { label: 'U-Bike', en: 'U-Bike',   icon: '🚲', color: '#f2c53d' },
   vending:{ label: '販賣機', en: 'Vending',  icon: '🥤', color: '#8b6fd6' },
-  gate:   { label: '校門',   en: 'Entrance', icon: '🚪', color: '#a97cf2' }
+  gate:   { label: '校門',   en: 'Entrance', icon: '🚪', color: '#a97cf2' },
+  cat:    { label: '貓咪據點', en: 'Cat Spot', icon: '🐈', color: '#e48c55' }
 }
 
 export const DIET = {

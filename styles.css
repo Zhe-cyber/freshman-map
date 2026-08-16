@@ -37,7 +37,21 @@ html,body{margin:0;height:100%;overflow:hidden;background:#eef4f1;color:var(--in
 
 .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
-.chips.float{top:74px;padding:0 14px}
+.category-menu{top:74px;padding:0 14px;display:flex;flex-direction:column;align-items:flex-start}
+.category-toggle{height:42px;border:0;border-radius:14px;background:var(--card);color:var(--ink);
+  box-shadow:var(--sh);font:800 13px/1 inherit;padding:0 12px;display:flex;align-items:center;
+  gap:8px;cursor:pointer}
+.category-toggle:active{transform:scale(.96)}
+.category-count{min-width:34px;padding:3px 7px;border-radius:999px;background:#e4efe9;
+  color:var(--soft);font-size:11px;text-align:center}
+.category-chevron{font-size:21px;line-height:1;transition:transform .18s}
+.category-toggle[aria-expanded="true"] .category-chevron{transform:rotate(90deg)}
+.category-panel{display:none;flex-wrap:wrap;gap:8px;width:min(350px,calc(100vw - 28px));
+  margin-top:9px;padding:11px;background:rgba(255,255,255,.96);border:1px solid #e4ede8;
+  border-radius:18px;box-shadow:var(--sh)}
+.category-panel.open{display:flex}
+.category-panel .chip{box-shadow:none;border:1.5px solid #dbe6e0;padding:8px 12px}
+.category-panel .chip[data-on="1"]{border-color:var(--ink)}
 #fchips{margin:12px 0 14px}
 .chip{flex:0 0 auto;border:none;cursor:pointer;font-family:inherit;background:var(--card);
   color:var(--ink);font-weight:700;font-size:13px;padding:9px 15px;border-radius:999px;
@@ -134,7 +148,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#eef4f1;color:var(--in
 .btn.yes{background:#34c98b}.btn.no{background:#ff6b6b}.btn.go{background:#2f8ef4}
 .btn.ghost{background:#eef4f1;color:var(--ink);box-shadow:0 4px 0 #dbe6e0}
 .btn.wide{width:100%;flex:none}
-.btn:focus-visible,.chip:focus-visible,.iconbtn:focus-visible,.abtn:focus-visible{outline:3px solid #2f8ef4;outline-offset:2px}
+.btn:focus-visible,.chip:focus-visible,.iconbtn:focus-visible,.abtn:focus-visible,.category-toggle:focus-visible{outline:3px solid #2f8ef4;outline-offset:2px}
 
 .h1{font-size:22px;font-weight:800;margin:2px 0 3px}
 .h1 small{display:block;font-size:12.5px;font-weight:500;color:var(--soft);margin-top:2px}
