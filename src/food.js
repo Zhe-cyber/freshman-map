@@ -1,128 +1,204 @@
-// OWNER: B — 美食 screen only.
-import { DIET } from './data.js'
-import { getPlaces, me, metres, score, tone, toneText, navTo } from './api.js'
-import { closeSheet, openSheet, scoreBar, toast } from './ui.js'
-import { localName, localPhrase, onLanguageChange, sayMeaning, secondaryName, t } from './i18n.js'
+// Restaurant + entertainment shortcut screen.
+import { DIET, MOCK } from './data.js'
+import { getPlaces, me, metres, navTo, score, tone, toneText } from './api.js'
+import { localName, onLanguageChange, secondaryName, t } from './i18n.js'
 
-// ponytail: only filters the survey data can actually answer. Add 全素/無豬肉
-// back once E's walking survey tags vegan and pork — right now every place is
-// veg or ask, so those two filters would return everything or nothing.
-const FILTERS = [
-  ['veg',   'filterVeg',   f => f.diet.includes('veg')],
-  ['cheap', 'filterCheap', f => f.price === 1],
-  ['near',  'filterNear',  f => metres(me, f) < 400]
+const CUISINES = [
+  'nightMarket', 'vegetarian', 'malaysian', 'indonesian',
+  'vietnamese', 'thai', 'taiwanese', 'dessert', 'other'
 ]
-const on = new Set()
-let currentFood = null
-const html = value => String(value ?? '').replace(/[&<>"']/g, c =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
+const PRICES = ['all', 1, 2, 3]
+const VENUE_KINDS = ['arcade', 'ktv', 'billiards', 'mall']
+
+const cuisineById = new Map(
+  MOCK.places.filter(place => place.type === 'food')
+    .map(place => [place.placeId, place.cuisine || 'other'])
+)
+
+let places = []
+let currentView = 'food'
+let currentCuisine = 'all'
+let currentPrice = 'all'
+let currentVenue = 'all'
+
+const html = value => String(value ?? '').replace(/[&<>"']/g, character =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
+
+const cuisineOf = place => place.cuisine || cuisineById.get(place.placeId) || 'other'
 
 export async function initFood() {
-  const chips = document.getElementById('fchips')
-  FILTERS.forEach(([key, labelKey]) => {
-    const b = document.createElement('button')
-    b.className = 'chip'; b.dataset.on = '0'; b.dataset.filter = key; b.textContent = t(labelKey)
-    b.onclick = () => {
-      on.has(key) ? (on.delete(key), b.dataset.on = '0') : (on.add(key), b.dataset.on = '1')
+  places = await getPlaces()
+  render()
+  onLanguageChange(render)
+}
+
+function render() {
+  renderTabs()
+  renderFilters()
+  currentView === 'food' ? renderRestaurants() : renderEntertainment()
+}
+
+function renderTabs() {
+  const tabs = document.getElementById('explore-tabs')
+  tabs.innerHTML = [
+    ['food', '🍜', 'restaurantTab'],
+    ['entertainment', '🎮', 'entertainmentTab']
+  ].map(([view, icon, label]) => `
+    <button type="button" role="tab" data-view="${view}"
+      aria-selected="${currentView === view}" class="${currentView === view ? 'on' : ''}">
+      <span>${icon}</span>${html(t(label))}
+    </button>`).join('')
+
+  tabs.querySelectorAll('[data-view]').forEach(button => {
+    button.onclick = () => {
+      currentView = button.dataset.view
       render()
     }
-    chips.appendChild(b)
   })
-  onLanguageChange(async () => {
-    const reopen = currentFood && document.getElementById('sheet').classList.contains('open') &&
-      document.getElementById('s-food').classList.contains('on')
-    renderFilters()
-    await render()
-    if (reopen) openFoodDetails(currentFood)
-  })
-  render()
 }
-
 
 function renderFilters() {
-  FILTERS.forEach(([key, labelKey]) => {
-    const chip = document.querySelector(`[data-filter="${key}"]`)
-    if (chip) chip.textContent = t(labelKey)
+  const filters = document.getElementById('fchips')
+  if (currentView === 'food') {
+    const available = new Set(places.filter(place => place.type === 'food').map(cuisineOf))
+    const cuisineChoices = CUISINES.filter(cuisine => available.has(cuisine))
+    filters.innerHTML = filterGroup(
+      t('cuisineFilter'),
+      [['all', t('filterAll')], ...cuisineChoices.map(cuisine => [cuisine, t(`cuisine.${cuisine}`)])],
+      currentCuisine,
+      'cuisine'
+    ) + filterGroup(
+      t('priceFilter'),
+      PRICES.map(price => [String(price), price === 'all' ? t('filterAll') : t(`price.${price}`)]),
+      String(currentPrice),
+      'price'
+    )
+  } else {
+    filters.innerHTML = filterGroup(
+      t('venueFilter'),
+      [['all', t('filterAll')], ...VENUE_KINDS.map(kind => [kind, t(`venue.${kind}`)])],
+      currentVenue,
+      'venue'
+    )
+  }
+
+  filters.querySelectorAll('[data-cuisine]').forEach(button => {
+    button.onclick = () => { currentCuisine = button.dataset.cuisine; render() }
+  })
+  filters.querySelectorAll('[data-price]').forEach(button => {
+    button.onclick = () => {
+      currentPrice = button.dataset.price === 'all' ? 'all' : Number(button.dataset.price)
+      render()
+    }
+  })
+  filters.querySelectorAll('[data-venue]').forEach(button => {
+    button.onclick = () => { currentVenue = button.dataset.venue; render() }
   })
 }
 
-async function render() {
-  const all = (await getPlaces()).filter(p => p.type === 'food')
-  const list = all
-    .filter(f => FILTERS.every(([key, , test]) => !on.has(key) || test(f)))
+function filterGroup(label, choices, selected, attribute) {
+  return `<div class="filter-group">
+    <div class="filter-label">${html(label)}</div>
+    <div class="chips">${choices.map(([value, text]) => `
+      <button type="button" class="chip" data-${attribute}="${html(value)}"
+        data-on="${String(value) === String(selected) ? 1 : 0}">${html(text)}</button>`).join('')}
+    </div>
+  </div>`
+}
+
+function renderRestaurants() {
+  const list = places
+    .filter(place => place.type === 'food')
+    .filter(place => currentCuisine === 'all' || cuisineOf(place) === currentCuisine)
+    .filter(place => currentPrice === 'all' || place.price === currentPrice)
     .sort((a, b) => score(b) - score(a))
 
-  const el = document.getElementById('flist')
+  const output = document.getElementById('flist')
   if (!list.length) {
-    el.innerHTML = `<div class="card empty">${t('noMatches')}</div>`
+    output.innerHTML = `<div class="card empty">${html(t('noRestaurants'))}</div>`
     return
   }
 
-  el.innerHTML = list.map(f => {
-    const p = score(f)
-    const tags = foodTags(f)
-    return `<div class="card restaurant-card" data-restaurant="${f.placeId}" role="button" tabindex="0"
-      aria-label="${html(t('viewDetails'))}: ${html(localName(f))}">
+  output.innerHTML = list.map(place => {
+    const rating = score(place)
+    return `<div class="card place-card restaurant-card" data-place="${place.placeId}"
+      role="link" tabindex="0" aria-label="${html(t('navigateTo', { place: localName(place) }))}">
       <div class="frow">
-        <div class="fic">${f.icon}</div>
-        <div style="flex:1">
-          <div class="fname">${html(localName(f))}</div>
-          <div class="fsub">${html(secondaryName(f))}</div>
-          <div class="tags">${tags}</div>
+        <div class="fic">${place.icon}</div>
+        <div class="place-main">
+          <div class="fname">${html(localName(place))}</div>
+          <div class="fsub">${html(secondaryName(place))}</div>
+          <div class="tags">${foodTags(place)}</div>
         </div>
       </div>
-      <div class="fmeta">🚶 ${t('distanceMetres', { count: metres(me, f) })}
-        <span class="eng" style="background:${tone(p)}22;color:${toneText(p)}">${t('orderEnglish')} ${Math.round(p / 10)}/10</span>
+      <div class="fmeta">
+        <span>🚶 ${html(t('distanceMetres', { count: metres(me, place) }))}</span>
+        <span class="eng" style="background:${tone(rating)}22;color:${toneText(rating)}">
+          ${html(t('orderEnglish'))} ${Math.round(rating / 10)}/10
+        </span>
       </div>
-      <div class="say" data-say="${f.placeId}">💬 <div>${html(localPhrase(f))}<small>${html(sayMeaning(f))}</small></div></div>
-      <div class="actions"><button class="btn go" data-go="${f.lat},${f.lng}">🧭 ${t('go')}</button></div>
+      ${navigateRow()}
     </div>`
   }).join('')
+  bindNavigation(list)
+}
 
-  el.querySelectorAll('[data-restaurant]').forEach(card => {
-    const restaurant = list.find(f => f.placeId === card.dataset.restaurant)
-    const open = () => openFoodDetails(restaurant)
-    card.onclick = e => { if (!e.target.closest('[data-say], [data-go]')) open() }
-    card.onkeydown = e => {
-      if (e.target === card && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault()
-        open()
+function renderEntertainment() {
+  const list = places
+    .filter(place => place.type === 'entertainment')
+    .filter(place => currentVenue === 'all' || place.venueKind === currentVenue)
+    .sort((a, b) => metres(me, a) - metres(me, b))
+
+  const output = document.getElementById('flist')
+  if (!list.length) {
+    output.innerHTML = `<div class="card empty">${html(t('noEntertainment'))}</div>`
+    return
+  }
+
+  output.innerHTML = list.map(place => `
+    <div class="card place-card entertainment-card" data-place="${place.placeId}"
+      role="link" tabindex="0" aria-label="${html(t('navigateTo', { place: localName(place) }))}">
+      <div class="frow">
+        <div class="fic">${place.icon}</div>
+        <div class="place-main">
+          <div class="fname">${html(localName(place))}</div>
+          <div class="fsub">${html(secondaryName(place))}</div>
+          <div class="tags"><span class="tag t-entertainment">${html(t(`venue.${place.venueKind}`))}</span></div>
+        </div>
+      </div>
+      <div class="fmeta"><span>🚶 ${html(t('distanceMetres', { count: metres(me, place) }))}</span></div>
+      ${navigateRow()}
+    </div>`).join('')
+  bindNavigation(list)
+}
+
+function foodTags(place) {
+  const dietTags = (place.diet || [])
+    .filter(diet => DIET[diet])
+    .map(diet => `<span class="tag ${DIET[diet][1]}">${html(t(`diet.${diet}`))}</span>`)
+    .join('')
+  return `<span class="tag t-cuisine">${html(t(`cuisine.${cuisineOf(place)}`))}</span>` +
+    `<span class="tag t-price">${html(t(`price.${place.price || 1}`))}</span>` +
+    dietTags + (place.cash ? `<span class="tag t-cash">${html(t('cash'))}</span>` : '')
+}
+
+const navigateRow = () => `<div class="card-nav">
+  <span>🧭 ${html(t('navigateGoogle'))}</span><span aria-hidden="true">›</span>
+</div>`
+
+function bindNavigation(list) {
+  const byId = new Map(list.map(place => [place.placeId, place]))
+  document.getElementById('flist').querySelectorAll('[data-place]').forEach(card => {
+    const go = () => {
+      const place = byId.get(card.dataset.place)
+      if (place) navTo(place.lat, place.lng)
+    }
+    card.onclick = go
+    card.onkeydown = event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        go()
       }
     }
   })
-  el.querySelectorAll('[data-say]').forEach(n => n.onclick = e => {
-    e.stopPropagation()
-    toast('「' + localPhrase(list.find(f => f.placeId === n.dataset.say)) + '」')
-  })
-  el.querySelectorAll('[data-go]').forEach(n => n.onclick = e => {
-    e.stopPropagation()
-    const restaurant = list.find(f => `${f.lat},${f.lng}` === n.dataset.go)
-    if (restaurant) navTo(restaurant.lat, restaurant.lng)
-  })
-}
-
-function foodTags(f) {
-  return f.diet.map(d => `<span class="tag ${DIET[d][1]}">${t(`diet.${d}`)}</span>`).join('') +
-    (f.cash ? `<span class="tag t-cash">${t('cash')}</span>` : '') +
-    (f.price === 1 ? '<span class="tag t-cheap">NT$ ~100</span>' : '')
-}
-
-function openFoodDetails(f) {
-  if (!f) return
-  currentFood = f
-  openSheet(`
-    <div class="head">
-      <button class="back" data-food-close aria-label="${html(t('close'))}">×</button>
-      <div class="bulb" style="background:#ff8a3d22">${f.icon}</div>
-      <div><div class="name">${html(localName(f))}</div><div class="sub">${html(secondaryName(f))}</div></div>
-      <div class="dist">${t('distanceMetres', { count: metres(me, f) })}</div>
-    </div>
-    <div class="tags">${foodTags(f)}</div>
-    ${scoreBar(t('englishOkay'), f, '#ff8a3d')}
-    <div class="say" data-food-say>💬 <div>${html(localPhrase(f))}<small>${html(sayMeaning(f))}</small></div></div>
-    <div class="actions"><button class="btn go" data-food-nav>🧭 ${t('go')}</button></div>`)
-
-  document.querySelector('[data-food-close]').onclick = () => { currentFood = null; closeSheet() }
-  document.querySelector('[data-food-say]').onclick = () => toast('「' + localPhrase(f) + '」')
-  document.querySelector('[data-food-nav]').onclick = () => navTo(f.lat, f.lng)
 }
