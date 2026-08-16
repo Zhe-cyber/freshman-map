@@ -10,7 +10,6 @@ const CUISINES = [
 const VENUE_KINDS = ['arcade', 'ktv', 'billiards', 'mall']
 const PRICE_MIN = 0
 const PRICE_MAX = 500
-const PRICE_STEP = 50
 
 const cuisineById = new Map(
   MOCK.places.filter(place => place.type === 'food')
@@ -79,7 +78,7 @@ function renderFilters() {
       [['all', t('filterAll')], ...cuisineChoices.map(cuisine => [cuisine, t(`cuisine.${cuisine}`)])],
       currentCuisine,
       'cuisine'
-    ) + priceRange()
+    ) + priceInputs()
   } else {
     filters.innerHTML = filterGroup(
       t('venueFilter'),
@@ -95,7 +94,7 @@ function renderFilters() {
   filters.querySelectorAll('[data-venue]').forEach(button => {
     button.onclick = () => { currentVenue = button.dataset.venue; render() }
   })
-  wirePriceRange()
+  wirePriceInputs()
 }
 
 function filterGroup(label, choices, selected, attribute) {
@@ -108,55 +107,44 @@ function filterGroup(label, choices, selected, attribute) {
   </div>`
 }
 
-function priceRange() {
-  const minPercent = currentMinPrice / PRICE_MAX * 100
-  const maxPercent = currentMaxPrice / PRICE_MAX * 100
+function priceInputs() {
   return `<div class="filter-group price-filter">
-    <div class="price-filter-head">
-      <span class="filter-label">${html(t('priceFilter'))}</span>
-      <output id="price-range-output">${html(t('priceRangeValue', {
-        min: currentMinPrice,
-        max: currentMaxPrice
-      }))}</output>
+    <div class="filter-label">${html(t('priceFilter'))}</div>
+    <div class="price-inputs">
+      <label><span>${html(t('minimumPrice'))}</span>
+        <span class="price-input"><span>NT$</span><input id="price-min" type="number" min="0"
+          step="10" inputmode="numeric" value="${currentMinPrice}"></span>
+      </label>
+      <span class="price-separator" aria-hidden="true">–</span>
+      <label><span>${html(t('maximumPrice'))}</span>
+        <span class="price-input"><span>NT$</span><input id="price-max" type="number" min="0"
+          step="10" inputmode="numeric" value="${currentMaxPrice}"></span>
+      </label>
     </div>
-    <div class="dual-range" id="price-range" style="--range-min:${minPercent}%;--range-max:${maxPercent}%">
-      <div class="range-rail"></div><div class="range-fill"></div>
-      <input id="price-min" type="range" min="${PRICE_MIN}" max="${PRICE_MAX}"
-        step="${PRICE_STEP}" value="${currentMinPrice}" aria-label="${html(t('minimumPrice'))}">
-      <input id="price-max" type="range" min="${PRICE_MIN}" max="${PRICE_MAX}"
-        step="${PRICE_STEP}" value="${currentMaxPrice}" aria-label="${html(t('maximumPrice'))}">
-    </div>
-    <div class="range-scale"><span>NT$${PRICE_MIN}</span><span>NT$${PRICE_MAX}+</span></div>
+    <div class="price-error" id="price-error" hidden>${html(t('priceRangeInvalid'))}</div>
   </div>`
 }
 
-function wirePriceRange() {
+function wirePriceInputs() {
   const minInput = document.getElementById('price-min')
   const maxInput = document.getElementById('price-max')
   if (!minInput || !maxInput) return
 
-  const update = changed => {
-    let nextMin = Number(minInput.value)
-    let nextMax = Number(maxInput.value)
-    if (nextMin > nextMax - PRICE_STEP) {
-      if (changed === 'min') nextMin = nextMax - PRICE_STEP
-      else nextMax = nextMin + PRICE_STEP
-    }
-    currentMinPrice = Math.max(PRICE_MIN, nextMin)
-    currentMaxPrice = Math.min(PRICE_MAX, nextMax)
-    minInput.value = currentMinPrice
-    maxInput.value = currentMaxPrice
-    const range = document.getElementById('price-range')
-    range.style.setProperty('--range-min', `${currentMinPrice / PRICE_MAX * 100}%`)
-    range.style.setProperty('--range-max', `${currentMaxPrice / PRICE_MAX * 100}%`)
-    document.getElementById('price-range-output').textContent = t('priceRangeValue', {
-      min: currentMinPrice,
-      max: currentMaxPrice
-    })
+  const update = () => {
+    const nextMin = minInput.value.trim() === '' ? NaN : Number(minInput.value)
+    const nextMax = maxInput.value.trim() === '' ? NaN : Number(maxInput.value)
+    const valid = Number.isFinite(nextMin) && Number.isFinite(nextMax) &&
+      nextMin >= PRICE_MIN && nextMax >= nextMin
+    minInput.setAttribute('aria-invalid', String(!valid))
+    maxInput.setAttribute('aria-invalid', String(!valid))
+    document.getElementById('price-error').hidden = valid
+    if (!valid) return
+    currentMinPrice = nextMin
+    currentMaxPrice = nextMax
     renderRestaurants()
   }
-  minInput.oninput = () => update('min')
-  maxInput.oninput = () => update('max')
+  minInput.oninput = update
+  maxInput.oninput = update
 }
 
 function renderRestaurants() {

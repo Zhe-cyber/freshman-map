@@ -204,6 +204,14 @@ export const MOCK = {
       en:'SU DAK Korean Cuisine', ja:'SU DAK 韓国料理',
       lat:24.9565297, lng:121.2403289, cuisine:'korean', priceEstimate:250, price:2,
       diet:['ask'], yes:0, no:0, say:'請問可以做不辣的嗎？', sayEn:'Can you make it not spicy?' },
+    { placeId:'f15', type:'food', icon:'🍰', name:'兔子的森林甜點',
+      en:"Rabbit's Forest Desserts", ja:'うさぎの森スイーツ',
+      lat:24.9560287, lng:121.2406843, cuisine:'dessert', priceEstimate:180, price:2,
+      diet:['veg'], yes:0, no:0, say:'請問今天有什麼蛋糕？', sayEn:'What cakes do you have today?' },
+    { placeId:'f16', type:'food', icon:'🍧', name:"maru's ice 丸冰",
+      en:"maru's ice", ja:'maru\'s ice 丸氷',
+      lat:24.9566858, lng:121.2407156, cuisine:'dessert', priceEstimate:100, price:1,
+      diet:['veg'], yes:0, no:0, say:'我要一份綿綿冰，謝謝', sayEn:'One shaved ice, please' },
 
     // Offline fallback. The map normally replaces these with the official live YouBike feed.
     { placeId:'b1', type:'bike', name:'中原大學', en:'YouBike · 站號 500304004',

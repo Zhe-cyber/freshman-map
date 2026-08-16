@@ -134,7 +134,7 @@ const added = () => {
 // been reseeded. Curated fields win when a cloud record has the same id so a
 // stale cloud photo filename cannot override a bundled asset.
 const CURATED_TYPES = new Set(['cat', 'entertainment'])
-const CURATED_PLACE_IDS = new Set(['f13', 'f14'])
+const CURATED_PLACE_IDS = new Set(['f13', 'f14', 'f15', 'f16'])
 const curatedPlaces = MOCK.places.filter(place =>
   CURATED_TYPES.has(place.type) || CURATED_PLACE_IDS.has(place.placeId))
 
