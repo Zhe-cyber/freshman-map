@@ -19,7 +19,10 @@ import {
   joinActivity,
   createActivity,
   deleteActivity,
-  user
+  getMessages,
+  sendMessage,
+  user,
+  setUserName
 } from './api.js'
 
 import { toast } from './ui.js'
@@ -29,6 +32,9 @@ const CATEGORIES = [
   ['food', '🍜'], ['hotpot', '🍲'], ['sport', '🏸'],
   ['outdoor', '🚲'], ['night', '🎤'], ['study', '📚'], ['other', '🎉']
 ]
+
+const MIN_CAP = 2
+const MAX_CAP = 50
 
 let activities = []
 let tick = null
@@ -113,6 +119,7 @@ function render() {
 
   list.querySelectorAll('[data-join]').forEach(b => b.onclick = () => join(b.dataset.join))
   list.querySelectorAll('[data-del]').forEach(b => b.onclick = () => remove(b.dataset.del))
+  list.querySelectorAll('[data-chat]').forEach(b => b.onclick = () => openChat(b.dataset.chat))
 }
 
 // Only appears while the app is open — that is the honest limit of it.
@@ -167,6 +174,7 @@ function card(a) {
     ${a.description ? `<div class="adesc">${html(localText(a.description))}</div>` : ''}
     <div class="seats">${seats}<span class="scount">${joined} / ${capacity}</span></div>
     ${who}
+    ${a.joinedByMe ? `<button class="linkbtn" data-chat="${html(a.activityId)}">💬 ${t('chatOpen')}</button>` : ''}
     ${mine ? `<button class="linkbtn quiet" data-del="${html(a.activityId)}">${t('actCancel')}</button>` : ''}
   </div>`
 }
@@ -212,6 +220,99 @@ async function remove(activityId) {
 }
 
 // ---------------------------------------------------------------------------
+// Chat — one room per activity, for the people who joined it
+// ---------------------------------------------------------------------------
+
+let chatId = null
+let chatPoll = null
+
+async function openChat(activityId) {
+  const a = activities.find(x => x.activityId === activityId)
+  if (!a) return
+
+  // A chat needs a name to attribute messages to. Signed-in users have one
+  // from Cognito; guests are asked once and it is remembered.
+  if (!user.name) {
+    const name = prompt(t('chatAskName'))
+    if (!name?.trim()) return
+    setUserName(name.trim())
+  }
+
+  chatId = activityId
+  const box = document.getElementById('bchat')
+  box.hidden = false
+  box.innerHTML = `
+    <div class="chathead">
+      <div><b>${html(localText(a.title))}</b><div class="fsub">${t('chatMembersOnly')}</div></div>
+      <button class="back" id="chat-close">✕</button>
+    </div>
+    <div class="chatlog" id="chat-log"><div class="chatempty">${t('chatLoading')}</div></div>
+    <div class="chatbar">
+      <input id="chat-text" type="text" maxlength="500" placeholder="${t('chatPlaceholder')}" autocomplete="off">
+      <button class="btn go" id="chat-send">${t('chatSend')}</button>
+    </div>`
+
+  document.getElementById('chat-close').onclick = closeChat
+  document.getElementById('chat-send').onclick = post
+  document.getElementById('chat-text').onkeydown = e => { if (e.key === 'Enter') post() }
+
+  await refreshChat()
+  clearInterval(chatPoll)
+  // Polling, not WebSockets. At a few people per activity this is a request
+  // every four seconds; a WebSocket API would be a day of work for the same
+  // visible result. Swap it later if rooms get busy.
+  chatPoll = setInterval(refreshChat, 4000)
+  document.getElementById('chat-text').focus()
+}
+
+function closeChat() {
+  clearInterval(chatPoll)
+  chatPoll = null
+  chatId = null
+  const box = document.getElementById('bchat')
+  box.hidden = true
+  box.innerHTML = ''
+}
+
+async function refreshChat() {
+  if (!chatId) return
+  let messages = []
+  try {
+    messages = await getMessages(chatId)
+  } catch { return }
+
+  const log = document.getElementById('chat-log')
+  if (!log) return
+  const atBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 40
+
+  log.innerHTML = messages.length
+    ? messages.map(m => `
+        <div class="msg${m.userId === user.userId ? ' me' : ''}">
+          <div class="mname">${html(m.name)} · ${html(shortTime(m.sentAt))}</div>
+          <div class="mtext">${html(m.text)}</div>
+        </div>`).join('')
+    : `<div class="chatempty">${t('chatEmpty')}</div>`
+
+  if (atBottom) log.scrollTop = log.scrollHeight
+}
+
+const shortTime = iso =>
+  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+async function post() {
+  const input = document.getElementById('chat-text')
+  const text = input.value.trim()
+  if (!text) return
+  input.value = ''
+  try {
+    await sendMessage(chatId, text)
+    await refreshChat()
+  } catch (e) {
+    toast(/403/.test(String(e.message)) ? t('chatNotMember') : t('errGeneric'))
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Create
 // ---------------------------------------------------------------------------
 
@@ -241,9 +342,9 @@ function openCreate() {
     <div class="field"><label for="ac-when">${t('actWhen')} *</label>
       <input id="ac-when" type="datetime-local" value="${local}"></div>
 
-    <div class="field"><label>${t('actCapacity')}</label>
-      <div class="picker" id="ac-cap">${[2, 3, 4, 6, 8, 12].map(n =>
-        `<button type="button" class="pick wide" data-cap="${n}" data-on="${n === 4 ? 1 : 0}">${n}</button>`).join('')}</div></div>
+    <div class="field"><label for="ac-cap">${t('actCapacity')}</label>
+      <input id="ac-cap" type="number" min="${MIN_CAP}" max="${MAX_CAP}" value="4" inputmode="numeric">
+      <div class="hint">${t('actCapacityHint', { min: MIN_CAP, max: MAX_CAP })}</div></div>
 
     <div class="field"><label for="ac-desc">${t('actDescription')}</label>
       <input id="ac-desc" type="text" maxlength="120" autocomplete="off"
@@ -261,7 +362,6 @@ function openCreate() {
     b.dataset.on = '1'
   }
   pickOne('#ac-cat', 'cat')
-  pickOne('#ac-cap', 'cap')
 
   box.querySelector('#ac-cancel').onclick = closeCreate
   box.querySelector('#ac-save').onclick = save
@@ -285,6 +385,12 @@ async function save() {
   const startAt = new Date(when)
   if (startAt.getTime() < Date.now() - 60000) return toast(t('actNeedFuture'))
 
+  // Free entry, but bounded: one person cannot invite the whole campus, and a
+  // capacity of zero would make an activity nobody can join.
+  const capacity = Number(box.querySelector('#ac-cap').value)
+  if (!Number.isInteger(capacity) || capacity < MIN_CAP || capacity > MAX_CAP)
+    return toast(t('actCapacityHint', { min: MIN_CAP, max: MAX_CAP }))
+
   const cat = box.querySelector('#ac-cat [data-on="1"]')
 
   try {
@@ -294,7 +400,7 @@ async function save() {
       startAt: startAt.toISOString(),
       category: cat.dataset.cat,
       icon: cat.dataset.icon,
-      capacity: Number(box.querySelector('#ac-cap [data-on="1"]').dataset.cap),
+      capacity,
       description: box.querySelector('#ac-desc').value.trim(),
       hostName: user.name || user.username || 'You',
       userId: user.userId

@@ -421,6 +421,82 @@ export const handler = async (event) => {
     }
 
     // -----------------------------------------------------------------------
+    // ACTIVITY CHAT
+    //
+    // GET  /c/{campus}/activities/{activityId}/messages
+    // POST /c/{campus}/activities/{activityId}/messages
+    //
+    // Messages are rows in the same table: sk = MSG#<activityId>#<timestamp>.
+    // The timestamp in the sort key means a Query returns them already in
+    // order — no sorting, no scan.
+    //
+    // Posting requires membership, checked on the server. A client-side check
+    // alone would be decoration: anyone can POST to a public API directly.
+    // -----------------------------------------------------------------------
+
+    if (
+      seg[2] === 'activities' &&
+      seg[3] &&
+      seg[4] === 'messages'
+    ) {
+      const activityId = decodeURIComponent(seg[3])
+
+      if (method === 'GET') {
+        const r = await db.send(new QueryCommand({
+          TableName: TABLE,
+          KeyConditionExpression: 'pk = :p AND begins_with(sk, :s)',
+          ExpressionAttributeValues: {
+            ':p': pk(campusId),
+            ':s': `MSG#${activityId}#`
+          },
+          Limit: 200
+        }))
+        return json(200, (r.Items || []).map(({ pk, sk, ...rest }) => rest))
+      }
+
+      if (method === 'POST') {
+        const { userId, name, text } = body
+        if (!userId || !text?.trim()) {
+          return json(400, { error: 'userId and text required' })
+        }
+        if (text.length > 500) {
+          return json(400, { error: 'message too long' })
+        }
+
+        const act = await db.send(new GetCommand({
+          TableName: TABLE,
+          Key: { pk: pk(campusId), sk: `ACT#${activityId}` }
+        }))
+        if (!act.Item) return json(404, { error: 'no such activity' })
+
+        const members = normaliseJoinedBy(act.Item.joinedBy)
+        if (!members.includes(userId)) {
+          return json(403, { error: 'join the activity first' })
+        }
+
+        const message = {
+          activityId,
+          messageId: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+          userId,
+          name: name || 'Someone',
+          text: text.trim(),
+          sentAt: new Date().toISOString()
+        }
+
+        await db.send(new PutCommand({
+          TableName: TABLE,
+          Item: {
+            pk: pk(campusId),
+            sk: `MSG#${activityId}#${message.messageId}`,
+            ...message
+          }
+        }))
+
+        return json(201, message)
+      }
+    }
+
+    // -----------------------------------------------------------------------
     // DELETE ACTIVITY
     //
     // DELETE /c/{campus}/activities/{activityId}

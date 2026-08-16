@@ -262,6 +262,35 @@ export async function createActivity(draft) {
 // The backend is responsible for checking userId.
 // -----------------------------------------------------------------------------
 
+// --- activity chat ---------------------------------------------------------
+// Mock mode keeps messages in memory so the screen is usable offline; the real
+// mode is a plain GET/POST. Membership is enforced by the server, not here.
+const mockMessages = {}
+
+export async function getMessages(activityId) {
+  if (usingMock) return mockMessages[activityId] || []
+  return call(`/activities/${activityId}/messages`)
+}
+
+export async function sendMessage(activityId, text) {
+  const message = {
+    activityId,
+    messageId: Date.now() + '',
+    userId: user.userId,
+    name: user.name || user.username || 'You',
+    text,
+    sentAt: new Date().toISOString()
+  }
+  if (usingMock) {
+    ;(mockMessages[activityId] ||= []).push(message)
+    return message
+  }
+  return call(`/activities/${activityId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ userId: user.userId, name: message.name, text })
+  })
+}
+
 export async function deleteActivity(activityId) {
   if (!activityId) {
     throw new Error('activityId required')
