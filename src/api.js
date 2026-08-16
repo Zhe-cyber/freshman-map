@@ -2,7 +2,7 @@
 // Empty API_BASE = mock mode. CLOUD sets it on Day 2, FRONT changes nothing.
 import { MOCK } from './data.js'
 
-const API_BASE = 'https://wfzwyfnffg.execute-api.us-east-1.amazonaws.com'
+const API_BASE = 'https://c6diol6blf.execute-api.us-east-1.amazonaws.com'
 const YOUBIKE_URL = 'https://apis.youbike.com.tw/json/station-yb2.json'
 
 // Multi-tenant backdoor: ?campus=ntu switches campus.
@@ -29,8 +29,7 @@ export const CAMPUSES = {
 export const campus = CAMPUSES[campusId] || CAMPUSES.cycu
 
 // Where the survey photos live.
-const PHOTO_BASE =
-  'https://freshmanmap-photos-875892081290.s3.us-east-1.amazonaws.com/'
+const PHOTO_BASE = 'https://freshmanmap-photos-893670131810.s3.us-east-1.amazonaws.com/'
 
 export const photoUrl = file =>
   file ? PHOTO_BASE + encodeURIComponent(file) : null

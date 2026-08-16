@@ -3,7 +3,7 @@
 // public client has no secret, so nothing here needs signing.
 
 const REGION = 'us-east-1'
-const CLIENT_ID = '2csus1nirs9j0uak71qq6ldbc6'
+const CLIENT_ID = '2an9iv5f3c9hvsq3hjikidjtbn'
 const ENDPOINT = `https://cognito-idp.${REGION}.amazonaws.com/`
 const KEY = 'freshmanmap.auth'
 
