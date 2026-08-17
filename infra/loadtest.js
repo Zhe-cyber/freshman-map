@@ -18,7 +18,9 @@ import https from 'node:https'
 // generator, not the API. Raw https with a wide-open agent instead.
 const agent = new https.Agent({ keepAlive: true, maxSockets: 256 })
 
-const API = process.env.API || 'https://wfzwyfnffg.execute-api.us-east-1.amazonaws.com'
+// Must match API_BASE in src/api.js. The old default here pointed at the
+// account that was reset, so a run would have measured a dead endpoint.
+const API = process.env.API || 'https://c6diol6blf.execute-api.us-east-1.amazonaws.com'
 const CAMPUS = process.env.CAMPUS || 'cycu'
 
 const GET_PATHS = ['/buildings', '/items', '/places', '/activities']
