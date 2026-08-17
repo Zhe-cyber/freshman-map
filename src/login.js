@@ -51,6 +51,10 @@ function render() {
           <input id="lg-pass" type="password" autocomplete="${up ? 'new-password' : 'current-password'}" minlength="8" required>
           ${up ? `<div class="hint">${t('loginPasswordHint')}</div>` : ''}
         </div>
+        ${up ? `<div class="field">
+          <label for="lg-pass2">${t('loginConfirm')}</label>
+          <input id="lg-pass2" type="password" autocomplete="new-password" minlength="8" required>
+        </div>` : ''}
 
         <div class="loginerr" id="lg-err" hidden></div>
 
@@ -83,6 +87,12 @@ async function submit(e) {
   err.hidden = true
   if (!username || password.length < 8) {
     err.textContent = t('loginPasswordHint'); err.hidden = false; return
+  }
+  // Checked here rather than left to Cognito: a typo in a new password locks
+  // you out of an account you cannot reset, because no account has an email
+  // on file for a reset code to go to.
+  if (mode === 'up' && password !== document.getElementById('lg-pass2').value) {
+    err.textContent = t('errPasswordMismatch'); err.hidden = false; return
   }
 
   btn.disabled = true
