@@ -172,7 +172,12 @@ API_ID=$(aws apigatewayv2 get-apis \
 # Without DELETE in API Gateway CORS, the browser blocks the request
 # before Lambda can receive it.
 
-CORS_CONFIG='{"AllowOrigins":["*"],"AllowMethods":["GET","POST","PUT","DELETE","OPTIONS"],"AllowHeaders":["content-type"]}'
+# authorization must be listed too. Signed-in requests carry a Bearer token,
+# which makes them non-simple, so the browser preflights them. Leave it out and
+# the browser blocks every signed-in request while curl sails through, because
+# curl does not preflight. This script rewrites CORS on every run, so dropping
+# it here silently breaks the live app.
+CORS_CONFIG='{"AllowOrigins":["*"],"AllowMethods":["GET","POST","PUT","DELETE","OPTIONS"],"AllowHeaders":["content-type","authorization"]}'
 
 if [ "$API_ID" = "None" ] || [ -z "$API_ID" ]; then
 
@@ -259,21 +264,35 @@ CORS_DELETE=$(curl -sI \
   -H 'Access-Control-Request-Headers: content-type' \
   | grep -ci 'access-control-allow-origin' || true)
 
+# The one that actually broke the app: a preflight that asks to send
+# Authorization. Every signed-in request carries a Bearer token, so if this is
+# missing from the response the browser blocks the lot — while every curl check
+# above still passes, because curl never preflights.
+CORS_AUTH=$(curl -sI \
+  -X OPTIONS \
+  "$URL/c/cycu/places" \
+  -H 'Origin: https://main.d30fnxve3yvk9m.amplifyapp.com' \
+  -H 'Access-Control-Request-Method: GET' \
+  -H 'Access-Control-Request-Headers: content-type,authorization' \
+  | grep -i 'access-control-allow-headers' | grep -ci 'authorization' || true)
+
 echo
 echo "  API             $URL"
 echo "  /health         HTTP $CODE"
 echo "  GET preflight   HTTP $PREFLIGHT_GET"
 echo "  DELETE preflight HTTP $PREFLIGHT_DELETE"
+echo "  auth preflight  $([ "$CORS_AUTH" -gt 0 ] && echo 'authorization allowed' || echo 'MISSING')"
 
 if [ "$PREFLIGHT_GET" = "204" ] &&
    [ "$PREFLIGHT_DELETE" = "204" ] &&
-   [ "$CORS_DELETE" -gt 0 ]; then
+   [ "$CORS_DELETE" -gt 0 ] &&
+   [ "$CORS_AUTH" -gt 0 ]; then
 
-  echo "  CORS            GET + DELETE preflight passes ?"
+  echo "  CORS            GET + DELETE + Authorization pass"
 
 else
 
-  echo "  CORS            FAILS ? �X browser requests may be blocked"
+  echo "  CORS            FAILS -- browser requests will be blocked"
 
 fi
 

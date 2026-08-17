@@ -39,7 +39,11 @@ const TABLE = process.env.TABLE || 'freshmanmap'
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET,POST,PUT,DELETE,OPTIONS',
-  'access-control-allow-headers': 'content-type',
+  // authorization is required: every signed-in request carries a Bearer token,
+  // which makes it a non-simple request. Without this header in the preflight
+  // response the browser blocks it — and curl will not notice, because curl
+  // does not preflight.
+  'access-control-allow-headers': 'content-type,authorization',
   'access-control-max-age': '86400'
 }
 
