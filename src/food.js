@@ -31,8 +31,12 @@ const html = value => String(value ?? '').replace(/[&<>"']/g, character =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
 
 const cuisineOf = place => place.cuisine || cuisineById.get(place.placeId) || 'other'
-const priceOf = place => place.priceEstimate || priceById.get(place.placeId) ||
-  ({ 1: 100, 2: 200, 3: 350 }[place.price] || 200)
+const priceOf = place => Number.isFinite(place.priceEstimate)
+  ? place.priceEstimate
+  : priceById.get(place.placeId) || ({ 1: 100, 2: 200, 3: 350 }[place.price] || 200)
+const priceLabel = place => Number.isFinite(place.priceMin) && Number.isFinite(place.priceMax)
+  ? t('priceRangeValue', { min: place.priceMin, max: place.priceMax })
+  : t('estimatedPrice', { price: priceOf(place) })
 const ratingOf = place => (Number(place.yes) || 0) + (Number(place.no) || 0)
   ? score(place)
   : null
@@ -222,7 +226,7 @@ function foodTags(place) {
     .map(diet => `<span class="tag ${DIET[diet][1]}">${html(t(`diet.${diet}`))}</span>`)
     .join('')
   return `<span class="tag t-cuisine">${html(t(`cuisine.${cuisineOf(place)}`))}</span>` +
-    `<span class="tag t-price">${html(t('estimatedPrice', { price: priceOf(place) }))}</span>` +
+    `<span class="tag t-price">${html(priceLabel(place))}</span>` +
     dietTags + (place.cash ? `<span class="tag t-cash">${html(t('cash'))}</span>` : '')
 }
 
@@ -235,7 +239,7 @@ function bindNavigation(list) {
   document.getElementById('flist').querySelectorAll('[data-place]').forEach(card => {
     const go = () => {
       const place = byId.get(card.dataset.place)
-      if (place) navTo(place.lat, place.lng)
+      if (place) navTo(place.lat, place.lng, place.navigationTarget || place.address)
     }
     card.onclick = go
     card.onkeydown = event => {

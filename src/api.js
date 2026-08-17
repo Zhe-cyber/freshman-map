@@ -157,25 +157,34 @@ export const getPlaces = async () => {
 }
 
 export async function createPlace(draft) {
+  const hasPriceRange = Number.isFinite(draft.priceMin) && Number.isFinite(draft.priceMax)
+  const priceEstimate = hasPriceRange ? Math.round((draft.priceMin + draft.priceMax) / 2) : null
   const place = {
     campusId,
     placeId: 'user-' + Date.now(),
-    type: 'food',
+    type: draft.type || 'food',
     icon: draft.icon || '⭐',
     name: draft.name,
     en: draft.name,
     address: draft.address || '',
+    navigationTarget: draft.navigationTarget || draft.address || '',
     note: draft.note || '',
+    cuisine: draft.cuisine || '',
     say: draft.say || '',
     sayEn: '',
     lat: draft.lat,
     lng: draft.lng,
-    price: draft.price || 1,
-    diet: draft.diet?.length ? draft.diet : ['ask'],
+    price: draft.price || (priceEstimate === null ? 1 : priceEstimate <= 150 ? 1 : priceEstimate <= 300 ? 2 : 3),
+    diet: draft.diet?.length ? draft.diet : [],
     cash: draft.cash !== false,
     yes: 1,
     no: 0,
     addedByUser: true
+  }
+  if (hasPriceRange) {
+    place.priceMin = draft.priceMin
+    place.priceMax = draft.priceMax
+    place.priceEstimate = priceEstimate
   }
 
   if (!usingMock) {
@@ -601,11 +610,16 @@ export const toneText = p =>
       ? '#a8730a'
       : '#e04848'
 
-export const navTo = (lat, lng) =>
+export const navTo = (lat, lng, navigationTarget = '') => {
+  const typedTarget = String(navigationTarget || '').trim()
+  const destination = typedTarget || (Number.isFinite(lat) && Number.isFinite(lng) ? `${lat},${lng}` : '')
+  if (!destination) return
   window.open(
-    `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
-    '_blank'
+    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`,
+    '_blank',
+    'noopener,noreferrer'
   )
+}
 
 // -----------------------------------------------------------------------------
 // Real GPS

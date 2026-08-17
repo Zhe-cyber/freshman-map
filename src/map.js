@@ -437,7 +437,7 @@ function wire(place) {
   })
   s.querySelector('[data-nav]')?.addEventListener('click', () => {
     const target = place || curB
-    navTo(target.lat, target.lng)
+    navTo(target.lat, target.lng, target.navigationTarget || target.address)
   })
   // Tap the photo for the full-size original — the sheet caps it at 38vh.
   s.querySelector('[data-zoom]')?.addEventListener('click', e =>
@@ -445,11 +445,22 @@ function wire(place) {
 }
 
 // --- recommend a place ----------------------------------------------------
-// Position comes from a draggable pin, not an address: free geocoders put
-// CYCU's own street address in Keelung, 60km away. Dragging is also more
-// precise than a single tap, and the form stays open while you adjust.
-const ICONS = ['⭐', '🍜', '🍚', '🍢', '🍮', '🧋', '🍞', '🥗', '🍗', '🍲']
+// A coordinate sets the in-app marker exactly and the marker cannot be
+// dragged afterward. An address stays as a Google Maps destination, so we do
+// not depend on an unreliable free geocoder to save a recommendation.
 const DIETS = [['veg', 'dietVeg'], ['vegan', 'dietVegan'], ['nopork', 'dietNoPork'], ['ask', 'dietAsk']]
+const CUISINES = [
+  'taiwanese', 'japanese', 'korean', 'nightMarket', 'thai',
+  'malaysian', 'indonesian', 'vietnamese', 'vegetarian', 'dessert', 'other'
+]
+
+// undefined = this is an address, null = coordinate-shaped but out of range.
+const parseCoordinates = value => {
+  const match = String(value || '').trim().match(/^(-?\d+(?:\.\d+)?)\s*[,，]\s*(-?\d+(?:\.\d+)?)$/)
+  if (!match) return undefined
+  const lat = Number(match[1]); const lng = Number(match[2])
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 ? { lat, lng } : null
+}
 
 let draftMarker = null
 
@@ -460,13 +471,8 @@ function startCreate() {
   el.className = 'pin draft'
   el.innerHTML = `<div class="body"><div class="ptag" style="--dot:#ff8a3d">
       <span class="pico">📍</span></div><div class="ptail"></div></div>`
-  draftMarker = new maplibregl.Marker({ element: el, anchor: 'bottom', draggable: true })
+  draftMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
     .setLngLat(c).addTo(map)
-  draftMarker.on('drag', () => {
-    const { lng, lat } = draftMarker.getLngLat()
-    const out = document.getElementById('ap-coords')
-    if (out) out.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`
-  })
   document.getElementById('addpin').classList.add('on')
   openCreateForm()
 }
@@ -482,7 +488,7 @@ function openCreateForm() {
   const { lng, lat } = draftMarker.getLngLat()
   openSheet(`
     <div class="head">
-      <div class="bulb" style="background:#ff8a3d22">⭐</div>
+      <div class="bulb" style="background:${TYPES.food.color}22">${TYPES.food.icon}</div>
       <div><div class="name">${tr('addPlace')}</div>
         <div class="sub">${tr('addPlaceDragHint')}</div></div>
     </div>
@@ -490,26 +496,38 @@ function openCreateForm() {
     <div class="field"><label for="ap-name">${tr('addPlaceName')} *</label>
       <input id="ap-name" type="text" maxlength="60" autocomplete="off"></div>
 
-    <div class="field"><label>${tr('addPlaceIcon')}</label>
-      <div class="picker" id="ap-icons">${ICONS.map((i, n) =>
-        `<button type="button" class="pick" data-icon="${i}" data-on="${n === 0 ? 1 : 0}">${i}</button>`).join('')}</div></div>
+    <div class="field"><label>${tr('addPlaceCategory')}</label>
+      <div class="picker category-picker" id="ap-category">${Object.entries(TYPES).map(([key, type]) =>
+        `<button type="button" class="pick wide" data-type="${key}" data-on="${key === 'food' ? 1 : 0}">
+          <span>${type.icon}</span>${html(tr(`type.${key}`))}</button>`).join('')}</div></div>
 
-    <div class="field"><label>${tr('addPlaceDiet')}</label>
+    <div class="field" data-food-field><label>${tr('addPlaceDiet')}</label>
       <div class="picker" id="ap-diet">${DIETS.map(([k, key]) =>
         `<button type="button" class="pick wide" data-diet="${k}" data-on="0">${tr(key)}</button>`).join('')}</div></div>
 
+    <div class="field" data-food-field><label>${tr('addPlaceCuisine')}</label>
+      <div class="picker" id="ap-cuisine">${CUISINES.map(cuisine =>
+        `<button type="button" class="pick wide" data-cuisine="${cuisine}" data-on="${cuisine === 'other' ? 1 : 0}">
+          ${html(tr(`cuisine.${cuisine}`))}</button>`).join('')}</div></div>
+
     <div class="field"><label>${tr('addPlacePrice')}</label>
-      <div class="picker" id="ap-price">${[1, 2, 3].map(n =>
-        `<button type="button" class="pick wide" data-price="${n}" data-on="${n === 1 ? 1 : 0}">${'$'.repeat(n)}</button>`).join('')}</div></div>
+      <div class="place-price-inputs">
+        <label><span>${tr('minimumPrice')} (NT$)</span><input id="ap-price-min" type="number" min="0" step="10" inputmode="numeric" placeholder="0"></label>
+        <span class="price-separator" aria-hidden="true">–</span>
+        <label><span>${tr('maximumPrice')} (NT$)</span><input id="ap-price-max" type="number" min="0" step="10" inputmode="numeric" placeholder="500"></label>
+      </div>
+      <div class="price-error" id="ap-price-error" hidden>${tr('priceRangeInvalid')}</div></div>
 
     <div class="field"><label for="ap-note">${tr('addPlaceNote')}</label>
       <input id="ap-note" type="text" maxlength="80" autocomplete="off"></div>
 
-    <div class="field"><label for="ap-say">${tr('addPlaceSay')}</label>
+    <div class="field" data-food-field><label for="ap-say">${tr('addPlaceSay')}</label>
       <input id="ap-say" type="text" maxlength="80" autocomplete="off" placeholder="一碗牛肉麵，不要香菜"></div>
 
-    <div class="field"><label for="ap-addr">${tr('addPlaceAddress')}</label>
-      <input id="ap-addr" type="text" maxlength="90" autocomplete="off"></div>
+    <div class="field"><label for="ap-location">${tr('addPlaceLocation')} *</label>
+      <input id="ap-location" type="text" maxlength="160" autocomplete="street-address"
+        placeholder="${html(tr('addPlaceLocationPlaceholder'))}" required>
+      <div class="field-hint">${tr('addPlaceLocationHint')}</div></div>
 
     <div class="coords">📍 <span id="ap-coords">${lat.toFixed(5)}, ${lng.toFixed(5)}</span></div>
 
@@ -519,36 +537,96 @@ function openCreateForm() {
     </div>`)
 
   const sheet = document.getElementById('sheet')
-  const pickOne = (id, attr) => sheet.querySelector(id).onclick = e => {
-    const b = e.target.closest('[data-' + attr + ']'); if (!b) return
-    sheet.querySelectorAll(`#${id.slice(1)} .pick`).forEach(x => x.dataset.on = '0')
-    b.dataset.on = '1'
+  const selectCategory = type => {
+    sheet.querySelectorAll('#ap-category .pick').forEach(button => {
+      button.dataset.on = button.dataset.type === type ? '1' : '0'
+    })
+    sheet.querySelectorAll('[data-food-field]').forEach(field => { field.hidden = type !== 'food' })
+    const category = TYPES[type]
+    const marker = draftMarker.getElement()
+    marker.querySelector('.pico').textContent = category.icon
+    marker.querySelector('.ptag').style.setProperty('--dot', category.color)
+    sheet.querySelector('.head .bulb').textContent = category.icon
+    sheet.querySelector('.head .bulb').style.background = category.color + '22'
   }
-  pickOne('#ap-icons', 'icon'); pickOne('#ap-price', 'price')
+  sheet.querySelector('#ap-category').onclick = e => {
+    const button = e.target.closest('[data-type]')
+    if (button) selectCategory(button.dataset.type)
+  }
+  selectCategory('food')
   sheet.querySelector('#ap-diet').onclick = e => {          // diet is multi-select
     const b = e.target.closest('[data-diet]'); if (!b) return
     b.dataset.on = b.dataset.on === '1' ? '0' : '1'
   }
+  sheet.querySelector('#ap-cuisine').onclick = e => {
+    const button = e.target.closest('[data-cuisine]')
+    if (!button) return
+    sheet.querySelectorAll('#ap-cuisine .pick').forEach(option => { option.dataset.on = '0' })
+    button.dataset.on = '1'
+  }
+
+  const locationInput = sheet.querySelector('#ap-location')
+  const applyTypedCoordinates = () => {
+    const coordinates = parseCoordinates(locationInput.value)
+    if (!coordinates) return
+    draftMarker.setLngLat([coordinates.lng, coordinates.lat])
+    sheet.querySelector('#ap-coords').textContent = `${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`
+  }
+  locationInput.onchange = applyTypedCoordinates
+
+  const priceMinInput = sheet.querySelector('#ap-price-min')
+  const priceMaxInput = sheet.querySelector('#ap-price-max')
+  const readPriceRange = () => {
+    const minText = priceMinInput.value.trim(); const maxText = priceMaxInput.value.trim()
+    if (!minText && !maxText) {
+      priceMinInput.setAttribute('aria-invalid', 'false')
+      priceMaxInput.setAttribute('aria-invalid', 'false')
+      sheet.querySelector('#ap-price-error').hidden = true
+      return { valid: true, min: null, max: null }
+    }
+    const min = Number(minText); const max = Number(maxText)
+    const valid = minText !== '' && maxText !== '' && Number.isFinite(min) && Number.isFinite(max) && min >= 0 && max >= min
+    priceMinInput.setAttribute('aria-invalid', String(!valid))
+    priceMaxInput.setAttribute('aria-invalid', String(!valid))
+    sheet.querySelector('#ap-price-error').hidden = valid
+    return { valid, min, max }
+  }
+  priceMinInput.oninput = readPriceRange
+  priceMaxInput.oninput = readPriceRange
 
   sheet.querySelector('[data-ap-cancel]').onclick = cancelCreate
   sheet.querySelector('[data-ap-save]').onclick = async () => {
     const name = sheet.querySelector('#ap-name').value.trim()
     if (!name) return toast(tr('addPlaceNeedName'))
-    const pos = draftMarker.getLngLat()
+    const type = sheet.querySelector('#ap-category [data-on="1"]').dataset.type
+    const location = locationInput.value.trim()
+    if (!location) return toast(tr('addPlaceNeedLocation'))
+    const coordinates = parseCoordinates(location)
+    if (coordinates === null) return toast(tr('addPlaceInvalidCoordinates'))
+    const priceRange = readPriceRange()
+    if (!priceRange.valid) return toast(tr('priceRangeInvalid'))
+    const pos = coordinates || draftMarker.getLngLat()
     const place = await createPlace({
       name,
-      icon: sheet.querySelector('#ap-icons [data-on="1"]').dataset.icon,
-      price: +sheet.querySelector('#ap-price [data-on="1"]').dataset.price,
-      diet: [...sheet.querySelectorAll('#ap-diet [data-on="1"]')].map(b => b.dataset.diet),
+      type,
+      icon: TYPES[type].icon,
+      priceMin: priceRange.min,
+      priceMax: priceRange.max,
+      cuisine: type === 'food' ? sheet.querySelector('#ap-cuisine [data-on="1"]').dataset.cuisine : '',
+      diet: type === 'food' ? [...sheet.querySelectorAll('#ap-diet [data-on="1"]')].map(b => b.dataset.diet) : [],
       note: sheet.querySelector('#ap-note').value.trim(),
-      say: sheet.querySelector('#ap-say').value.trim(),
-      address: sheet.querySelector('#ap-addr').value.trim(),
+      say: type === 'food' ? sheet.querySelector('#ap-say').value.trim() : '',
+      address: coordinates ? '' : location,
+      navigationTarget: location,
       lat: pos.lat, lng: pos.lng
     })
     draftMarker.remove(); draftMarker = null
     document.getElementById('addpin').classList.remove('on')
     places.push(place)
+    active.add(place.type)
+    buildChips()
     addPlacePin(place)
+    filter()
     closeSheet()
     toast(tr('addPlaceDone'))
   }
