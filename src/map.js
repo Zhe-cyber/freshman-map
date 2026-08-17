@@ -458,6 +458,7 @@ function wire(place) {
 // Google Maps destination, so we do not depend on an unreliable free geocoder
 // or a manually positioned temporary pin to save a recommendation.
 const DIETS = [['veg', 'dietVeg'], ['vegan', 'dietVegan'], ['nopork', 'dietNoPork']]
+const RECOMMEND_TYPES = ['food', 'entertainment', 'cat']
 const CUISINES = [
   'taiwanese', 'japanese', 'korean', 'nightMarket',
   'vegetarian', 'dessert', 'other'
@@ -539,7 +540,7 @@ function openCreateForm() {
       <div class="poihits" id="ap-hits" role="listbox" hidden></div></div>
 
     <div class="field"><label>${tr('addPlaceCategory')}</label>
-      <div class="picker category-picker" id="ap-category">${Object.entries(TYPES).map(([key, type]) =>
+      <div class="picker category-picker" id="ap-category">${RECOMMEND_TYPES.map(key => [key, TYPES[key]]).map(([key, type]) =>
         `<button type="button" class="pick wide" data-type="${key}" data-on="${key === 'food' ? 1 : 0}">
           <span>${type.icon}</span>${html(tr(`type.${key}`))}</button>`).join('')}</div></div>
 
