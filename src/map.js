@@ -1,5 +1,5 @@
 // OWNER: A — map screen only. Nobody else edits this file.
-import { TYPES } from './data.js'
+import { PAYMENT_METHODS, TYPES } from './data.js'
 import {
   campus, me, getBuildings, getPlaces, createPlace, loadItems, itemsIn, findItem,
   getYouBikeStations, metres, floorOrder, navTo, watchMe, photoUrl
@@ -371,7 +371,10 @@ function openPlace(p, move = true) {
   let body = ''
 
   if (p.type === 'food') {
+    const payments = paymentMethodsOf(p)
     body = scoreBar(tr('englishOkay'), p, '#ff8a3d') +
+      (payments.length ? `<div class="tags payment-tags">${payments.map(method =>
+        `<span class="tag t-payment">${html(tr(`payment.${method}`))}</span>`).join('')}</div>` : '') +
       `<div class="say" data-say>💬 <div>${html(localPhrase(p))}<small>${html(sayMeaning(p))}</small></div></div>`
   } else if (p.type === 'bike') {
     const pct = p.docks ? Math.min(100, Math.round(p.bikes / p.docks * 100)) : 0
@@ -448,11 +451,18 @@ function wire(place) {
 // A coordinate sets the saved map location exactly. An address stays as a
 // Google Maps destination, so we do not depend on an unreliable free geocoder
 // or a manually positioned temporary pin to save a recommendation.
-const DIETS = [['veg', 'dietVeg'], ['vegan', 'dietVegan'], ['nopork', 'dietNoPork'], ['ask', 'dietAsk']]
+const DIETS = [['veg', 'dietVeg'], ['vegan', 'dietVegan'], ['nopork', 'dietNoPork']]
 const CUISINES = [
-  'taiwanese', 'japanese', 'korean', 'nightMarket', 'thai',
-  'malaysian', 'indonesian', 'vietnamese', 'vegetarian', 'dessert', 'other'
+  'taiwanese', 'japanese', 'korean', 'nightMarket',
+  'vegetarian', 'dessert', 'other'
 ]
+
+const paymentMethodsOf = place => {
+  const methods = Array.isArray(place.paymentMethods)
+    ? place.paymentMethods
+    : place.cash ? ['cash'] : []
+  return methods.filter(method => PAYMENT_METHODS.includes(method))
+}
 
 // undefined = this is an address, null = coordinate-shaped but out of range.
 const parseCoordinates = value => {
@@ -510,6 +520,11 @@ function openCreateForm() {
       </div>
       <div class="price-error" id="ap-price-error" hidden>${tr('priceRangeInvalid')}</div></div>
 
+    <div class="field" data-food-field><label>${tr('addPlacePayment')}</label>
+      <div class="picker" id="ap-payment">${PAYMENT_METHODS.map(method =>
+        `<button type="button" class="pick wide" data-payment="${method}" data-on="${method === 'cash' ? 1 : 0}">
+          ${html(tr(`payment.${method}`))}</button>`).join('')}</div></div>
+
     <div class="field"><label for="ap-note">${tr('addPlaceNote')}</label>
       <input id="ap-note" type="text" maxlength="80" autocomplete="off"></div>
 
@@ -550,6 +565,11 @@ function openCreateForm() {
     if (!button) return
     sheet.querySelectorAll('#ap-cuisine .pick').forEach(option => { option.dataset.on = '0' })
     button.dataset.on = '1'
+  }
+  sheet.querySelector('#ap-payment').onclick = e => {
+    const button = e.target.closest('[data-payment]')
+    if (!button) return
+    button.dataset.on = button.dataset.on === '1' ? '0' : '1'
   }
 
   const locationInput = sheet.querySelector('#ap-location')
@@ -592,6 +612,7 @@ function openCreateForm() {
       priceMin: priceRange.min,
       priceMax: priceRange.max,
       cuisine: type === 'food' ? sheet.querySelector('#ap-cuisine [data-on="1"]').dataset.cuisine : '',
+      paymentMethods: type === 'food' ? [...sheet.querySelectorAll('#ap-payment [data-on="1"]')].map(b => b.dataset.payment) : [],
       diet: type === 'food' ? [...sheet.querySelectorAll('#ap-diet [data-on="1"]')].map(b => b.dataset.diet) : [],
       note: sheet.querySelector('#ap-note').value.trim(),
       say: type === 'food' ? sheet.querySelector('#ap-say').value.trim() : '',

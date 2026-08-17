@@ -17,9 +17,10 @@ export const TYPES = {
 
 export const DIET = {
   veg:   ['素食', 't-veg'],
-  vegan: ['全素 vegan', 't-vegan'],
-  ask:   ['清真？要問 ask', 't-ask']
+  vegan: ['全素 vegan', 't-vegan']
 }
+
+export const PAYMENT_METHODS = ['cash', 'card', 'linePay', 'jkoPay', 'easyCard', 'applePay']
 
 const B = (buildingId, name, en, lat, lng) => ({ campusId: 'cycu', buildingId, name, en, lat, lng })
 // paper: true = 有衛生紙 provided, false = 自備 bring your own, undefined = not surveyed yet.
@@ -236,11 +237,9 @@ export const MOCK = {
       lat:24.957917, lng:121.240111 },
     { placeId:'g6', type:'gate', name:'全人小門', en:'Holistic Education Gate',
       lat:24.958361, lng:121.242111 },
-    // TODO 恩慈小門 was surveyed with the SAME coordinates as 全人小門
-    // (24°57'30.1"N 121°14'31.6"E). Nudged ~15m east so the pins do not stack
-    // exactly — re-survey this one and correct it.
+    // Re-surveyed at 24°57'19.4"N 121°14'35.4"E.
     { placeId:'g7', type:'gate', name:'恩慈小門', en:'Enci Gate',
-      lat:24.958361, lng:121.242261 },
+      lat:24.955389, lng:121.243167 },
 
     // 販賣機 outside buildings. Machines inside a building are items on a
     // floor instead, reached through the building directory.

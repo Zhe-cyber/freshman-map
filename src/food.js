@@ -1,11 +1,11 @@
 // Restaurant + entertainment shortcut screen.
-import { DIET, MOCK } from './data.js'
+import { DIET, MOCK, PAYMENT_METHODS } from './data.js'
 import { getPlaces, me, metres, navTo, score, tone, toneText } from './api.js'
 import { localName, onLanguageChange, secondaryName, t } from './i18n.js'
 
 const CUISINES = [
-  'taiwanese', 'japanese', 'korean', 'nightMarket', 'thai',
-  'malaysian', 'indonesian', 'vietnamese', 'vegetarian', 'dessert', 'other'
+  'taiwanese', 'japanese', 'korean', 'nightMarket',
+  'vegetarian', 'dessert', 'other'
 ]
 const VENUE_KINDS = ['arcade', 'ktv', 'billiards', 'mall', 'other']
 const PRICE_MIN = 0
@@ -19,7 +19,6 @@ const priceById = new Map(
   MOCK.places.filter(place => place.type === 'food')
     .map(place => [place.placeId, place.priceEstimate])
 )
-
 let places = []
 let currentView = 'food'
 let currentCuisine = 'all'
@@ -35,6 +34,12 @@ const cuisineOf = place => {
   return CUISINES.includes(cuisine) ? cuisine : 'other'
 }
 const venueOf = place => VENUE_KINDS.includes(place.venueKind) ? place.venueKind : 'other'
+const paymentMethodsOf = place => {
+  const methods = Array.isArray(place.paymentMethods)
+    ? place.paymentMethods
+    : place.cash ? ['cash'] : []
+  return methods.filter(method => PAYMENT_METHODS.includes(method))
+}
 const priceOf = place => Number.isFinite(place.priceEstimate)
   ? place.priceEstimate
   : priceById.get(place.placeId) || ({ 1: 100, 2: 200, 3: 350 }[place.price] || 200)
@@ -229,9 +234,12 @@ function foodTags(place) {
     .filter(diet => DIET[diet])
     .map(diet => `<span class="tag ${DIET[diet][1]}">${html(t(`diet.${diet}`))}</span>`)
     .join('')
+  const paymentTags = paymentMethodsOf(place)
+    .map(method => `<span class="tag t-payment">${html(t(`payment.${method}`))}</span>`)
+    .join('')
   return `<span class="tag t-cuisine">${html(t(`cuisine.${cuisineOf(place)}`))}</span>` +
     `<span class="tag t-price">${html(priceLabel(place))}</span>` +
-    dietTags + (place.cash ? `<span class="tag t-cash">${html(t('cash'))}</span>` : '')
+    dietTags + paymentTags
 }
 
 const navigateRow = () => `<div class="card-nav">
