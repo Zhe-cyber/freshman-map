@@ -1,0 +1,16 @@
+# Shell scripts must keep LF endings even on Windows.
+#
+# core.autocrlf=true rewrote infra/*.sh to CRLF on checkout, and bash then read
+# the trailing \r as part of each command:
+#
+#   infra/deploy-web.sh: line 11: $'\r': command not found
+#   : invalid option name line 12: set: pipefail
+#
+# The scripts run under Git Bash, so they need Unix endings regardless of the
+# host OS. Without this every clone on Windows hits the same wall.
+*.sh text eol=lf
+
+# Same reasoning: these are read by tools, not by Notepad.
+*.mjs text eol=lf
+*.js  text eol=lf
+*.json text eol=lf

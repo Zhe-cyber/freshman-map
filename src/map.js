@@ -1,5 +1,6 @@
 // OWNER: A — map screen only. Nobody else edits this file.
 import { PAYMENT_METHODS, TYPES } from './data.js'
+import { POI } from './poi.js'
 import {
   campus, me, getBuildings, getPlaces, createPlace, loadItems, itemsIn, findItem,
   getYouBikeStations, metres, floorOrder, navTo, watchMe, photoUrl
@@ -472,6 +473,37 @@ const parseCoordinates = value => {
   return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 ? { lat, lng } : null
 }
 
+// Look the place up by name instead of asking someone to eyeball a pin.
+//
+// A person guessing a location on a map is routinely 30-50m out, which puts a
+// restaurant on the wrong side of the street. OSM already knows where these
+// are: 424 named places within 1.2km of campus, bundled in poi.js.
+//
+// Substring match, not fuzzy. Names here are mostly Chinese, where every
+// character carries meaning and edit-distance scoring produces nonsense —
+// 牛肉麵 and 牛肉飯 differ by one character and are different meals.
+function searchPoi(query, limit = 6) {
+  const q = query.trim().toLowerCase()
+  if (q.length < 1) return []
+
+  const hits = []
+  for (const p of POI) {
+    const name = p.n.toLowerCase()
+    const en = (p.e || '').toLowerCase()
+    const at = name.indexOf(q)
+    const atEn = en ? en.indexOf(q) : -1
+    if (at === -1 && atEn === -1) continue
+    // A name starting with what you typed is the one you meant.
+    hits.push({ p, rank: at === 0 || atEn === 0 ? 0 : 1, at: at === -1 ? atEn : at })
+    if (hits.length > 200) break
+  }
+
+  return hits
+    .sort((a, b) => a.rank - b.rank || a.at - b.at || a.p.n.length - b.p.n.length)
+    .slice(0, limit)
+    .map(h => h.p)
+}
+
 let creatingPlace = false
 
 function startCreate() {
@@ -496,7 +528,10 @@ function openCreateForm() {
     </div>
 
     <div class="field"><label for="ap-name">${tr('addPlaceName')} *</label>
-      <input id="ap-name" type="text" maxlength="60" autocomplete="off"></div>
+      <input id="ap-name" type="text" maxlength="60" autocomplete="off"
+        role="combobox" aria-expanded="false" aria-controls="ap-hits" aria-autocomplete="list">
+      <div class="field-hint">${tr('addPlaceSearchHint')}</div>
+      <div class="poihits" id="ap-hits" role="listbox" hidden></div></div>
 
     <div class="field"><label>${tr('addPlaceCategory')}</label>
       <div class="picker category-picker" id="ap-category">${Object.entries(TYPES).map(([key, type]) =>
@@ -573,6 +608,87 @@ function openCreateForm() {
   }
 
   const locationInput = sheet.querySelector('#ap-location')
+
+  // --- name search ---------------------------------------------------------
+  const nameInput = sheet.querySelector('#ap-name')
+  const hits = sheet.querySelector('#ap-hits')
+
+  const closeHits = () => {
+    hits.hidden = true
+    hits.innerHTML = ''
+    nameInput.setAttribute('aria-expanded', 'false')
+  }
+
+  const pick = p => {
+    nameInput.value = p.n
+    // The whole point: real coordinates instead of a guessed pin. The location
+    // field already accepts "lat,lng", so the save path needs no changes.
+    locationInput.value = `${p.lat},${p.lng}`
+    if (TYPES[p.t]) selectCategory(p.t)
+    closeHits()
+    map.easeTo({ center: [p.lng, p.lat], zoom: 17.4, duration: 600 })
+    toast(tr('addPlaceFound'))
+  }
+
+  // Places already on our map are searched first and cannot be picked — the
+  // point of a search box here is to add somewhere new, and OSM has no entry
+  // for a lot of what we surveyed (中原夜市 is only a bus stop in OSM, but it
+  // is the single most important place in this app). Showing them stops the
+  // duplicates that would make the map exactly as messy as we feared.
+  const mine = q => {
+    const s = q.trim().toLowerCase()
+    if (!s) return []
+    return places
+      .filter(p => String(localName(p) || '').toLowerCase().includes(s)
+                || String(p.name || '').toLowerCase().includes(s))
+      .slice(0, 3)
+  }
+
+  nameInput.oninput = () => {
+    const already = mine(nameInput.value)
+    // Drop OSM results we already carry, or the same shop is offered twice —
+    // once as "already here" and once as something to add again.
+    const have = new Set(places.map(p => String(p.name || '').toLowerCase()))
+    const found = searchPoi(nameInput.value).filter(p => !have.has(p.n.toLowerCase()))
+    if (!already.length && !found.length) return closeHits()
+
+    hits.innerHTML =
+      already.map(p => `
+        <button type="button" class="poihit have" role="option" data-have="${html(p.placeId)}">
+          <span class="poiico">${p.icon || TYPES[p.type]?.icon || '📍'}</span>
+          <span class="poitext">
+            <span class="poiname">${html(localName(p))}</span>
+            <span class="poien">${tr('addPlaceAlready')}</span>
+          </span>
+          <span class="poidist">${Math.round(metres(map.getCenter(), p))}m</span>
+        </button>`).join('') +
+      found.map((p, i) => `
+        <button type="button" class="poihit" role="option" data-hit="${i}">
+          <span class="poiico">${TYPES[p.t]?.icon || '📍'}</span>
+          <span class="poitext">
+            <span class="poiname">${html(p.n)}</span>
+            ${p.e ? `<span class="poien">${html(p.e)}</span>` : ''}
+          </span>
+          <span class="poidist">${Math.round(metres(map.getCenter(), p))}m</span>
+        </button>`).join('')
+
+    hits.hidden = false
+    nameInput.setAttribute('aria-expanded', 'true')
+    hits.querySelectorAll('[data-hit]').forEach(b =>
+      b.onclick = () => pick(found[Number(b.dataset.hit)]))
+    hits.querySelectorAll('[data-have]').forEach(b => b.onclick = () => {
+      const p = places.find(x => x.placeId === b.dataset.have)
+      if (!p) return
+      cancelCreate()
+      map.easeTo({ center: [p.lng, p.lat], zoom: 17.4, duration: 600 })
+      openPlace(p)
+    })
+  }
+
+  // Typing a name we do not know is normal — it is how a place gets added in
+  // the first place. Dismiss quietly and leave the manual field alone.
+  nameInput.onkeydown = e => { if (e.key === 'Escape') closeHits() }
+
   const priceMinInput = sheet.querySelector('#ap-price-min')
   const priceMaxInput = sheet.querySelector('#ap-price-max')
   const readPriceRange = () => {
