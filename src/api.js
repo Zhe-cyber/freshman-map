@@ -72,7 +72,10 @@ export function setUserName(name) {
 // Current location
 export const me = {
   lat: 24.9563,
-  lng: 121.2418
+  lng: 121.2418,
+  // Until watchMe() gets a fix this is just campus, not the user. Anything
+  // that would mislead by treating a guess as a position checks this first.
+  real: false
 }
 
 // -----------------------------------------------------------------------------
@@ -613,11 +616,22 @@ export const toneText = p =>
       : '#e04848'
 
 export const navTo = (lat, lng, navigationTarget = '') => {
-  const typedTarget = String(navigationTarget || '').trim()
-  const destination = typedTarget || (Number.isFinite(lat) && Number.isFinite(lng) ? `${lat},${lng}` : '')
+  // Coordinates win over any typed text. Handing Google an address makes it
+  // geocode — the same guessing that put a walking route on the wrong shop,
+  // and the reason this app collects coordinates at all. Text is the fallback
+  // for records that have no usable position, not the preference.
+  const hasPoint = Number.isFinite(lat) && Number.isFinite(lng)
+  const destination = hasPoint ? `${lat},${lng}` : String(navigationTarget || '').trim()
   if (!destination) return
+
+  // Send our own position as the origin when we actually have one. A desktop
+  // browser geolocates by IP, which put "Your location" 2.2km from campus and
+  // turned a 3-minute walk into 30. Only when the fix is real — passing the
+  // campus default would state a position we do not know.
+  const origin = me.real ? `&origin=${me.lat},${me.lng}` : ''
+
   window.open(
-    `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`,
+    `https://www.google.com/maps/dir/?api=1${origin}&destination=${encodeURIComponent(destination)}`,
     '_blank',
     'noopener,noreferrer'
   )
@@ -634,6 +648,7 @@ export function watchMe(onMove) {
     p => {
       me.lat = p.coords.latitude
       me.lng = p.coords.longitude
+      me.real = true
       onMove?.(me)
     },
     () => {},
