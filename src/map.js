@@ -27,7 +27,7 @@ export async function initMap() {
     attributionControl: { compact: true },
     style: 'https://tiles.openfreemap.org/styles/bright'
   })
-  map.on('click', () => { if (!draftMarker) closeSheet() })
+  map.on('click', () => { creatingPlace ? cancelCreate() : closeSheet() })
   document.getElementById('addpin').onclick = startCreate
   map.on('style.load', applyMapLanguage)
   map.on('load', applyMapLanguage)
@@ -445,9 +445,9 @@ function wire(place) {
 }
 
 // --- recommend a place ----------------------------------------------------
-// A coordinate sets the in-app marker exactly and the marker cannot be
-// dragged afterward. An address stays as a Google Maps destination, so we do
-// not depend on an unreliable free geocoder to save a recommendation.
+// A coordinate sets the saved map location exactly. An address stays as a
+// Google Maps destination, so we do not depend on an unreliable free geocoder
+// or a manually positioned temporary pin to save a recommendation.
 const DIETS = [['veg', 'dietVeg'], ['vegan', 'dietVegan'], ['nopork', 'dietNoPork'], ['ask', 'dietAsk']]
 const CUISINES = [
   'taiwanese', 'japanese', 'korean', 'nightMarket', 'thai',
@@ -462,30 +462,22 @@ const parseCoordinates = value => {
   return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180 ? { lat, lng } : null
 }
 
-let draftMarker = null
+let creatingPlace = false
 
 function startCreate() {
-  if (draftMarker) return cancelCreate()
-  const c = map.getCenter()
-  const el = document.createElement('div')
-  el.className = 'pin draft'
-  el.innerHTML = `<div class="body"><div class="ptag" style="--dot:#ff8a3d">
-      <span class="pico">📍</span></div><div class="ptail"></div></div>`
-  draftMarker = new maplibregl.Marker({ element: el, anchor: 'bottom' })
-    .setLngLat(c).addTo(map)
+  if (creatingPlace) return cancelCreate()
+  creatingPlace = true
   document.getElementById('addpin').classList.add('on')
   openCreateForm()
 }
 
 function cancelCreate() {
-  draftMarker?.remove()
-  draftMarker = null
+  creatingPlace = false
   document.getElementById('addpin').classList.remove('on')
   closeSheet()
 }
 
 function openCreateForm() {
-  const { lng, lat } = draftMarker.getLngLat()
   openSheet(`
     <div class="head">
       <div class="bulb" style="background:${TYPES.food.color}22">${TYPES.food.icon}</div>
@@ -529,8 +521,6 @@ function openCreateForm() {
         placeholder="${html(tr('addPlaceLocationPlaceholder'))}" required>
       <div class="field-hint">${tr('addPlaceLocationHint')}</div></div>
 
-    <div class="coords">📍 <span id="ap-coords">${lat.toFixed(5)}, ${lng.toFixed(5)}</span></div>
-
     <div class="actions">
       <button class="btn ghost" data-ap-cancel>${tr('cancel')}</button>
       <button class="btn go" data-ap-save>${tr('addPlaceSave')}</button>
@@ -543,9 +533,6 @@ function openCreateForm() {
     })
     sheet.querySelectorAll('[data-food-field]').forEach(field => { field.hidden = type !== 'food' })
     const category = TYPES[type]
-    const marker = draftMarker.getElement()
-    marker.querySelector('.pico').textContent = category.icon
-    marker.querySelector('.ptag').style.setProperty('--dot', category.color)
     sheet.querySelector('.head .bulb').textContent = category.icon
     sheet.querySelector('.head .bulb').style.background = category.color + '22'
   }
@@ -566,14 +553,6 @@ function openCreateForm() {
   }
 
   const locationInput = sheet.querySelector('#ap-location')
-  const applyTypedCoordinates = () => {
-    const coordinates = parseCoordinates(locationInput.value)
-    if (!coordinates) return
-    draftMarker.setLngLat([coordinates.lng, coordinates.lat])
-    sheet.querySelector('#ap-coords').textContent = `${coordinates.lat.toFixed(5)}, ${coordinates.lng.toFixed(5)}`
-  }
-  locationInput.onchange = applyTypedCoordinates
-
   const priceMinInput = sheet.querySelector('#ap-price-min')
   const priceMaxInput = sheet.querySelector('#ap-price-max')
   const readPriceRange = () => {
@@ -605,7 +584,7 @@ function openCreateForm() {
     if (coordinates === null) return toast(tr('addPlaceInvalidCoordinates'))
     const priceRange = readPriceRange()
     if (!priceRange.valid) return toast(tr('priceRangeInvalid'))
-    const pos = coordinates || draftMarker.getLngLat()
+    const pos = coordinates || map.getCenter()
     const place = await createPlace({
       name,
       type,
@@ -620,7 +599,7 @@ function openCreateForm() {
       navigationTarget: location,
       lat: pos.lat, lng: pos.lng
     })
-    draftMarker.remove(); draftMarker = null
+    creatingPlace = false
     document.getElementById('addpin').classList.remove('on')
     places.push(place)
     active.add(place.type)
