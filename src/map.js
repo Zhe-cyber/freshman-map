@@ -689,6 +689,41 @@ function openCreateForm() {
   // the first place. Dismiss quietly and leave the manual field alone.
   nameInput.onkeydown = e => { if (e.key === 'Escape') closeHits() }
 
+  // The other direction: they have the spot, we offer the name.
+  //
+  // Suggestions, never auto-fill. Shopfronts here are 3-5m wide, so the
+  // nearest POI to a dropped pin is often the shop next door — measured
+  // against our own places, a straight nearest-match named the neighbour
+  // about one time in six. A wrong name nobody notices is worse than a
+  // blank field, so the choice stays with the person who was standing there.
+  const suggestFromLocation = () => {
+    const at = parseCoordinates(locationInput.value)
+    if (!at) return                       // undefined = an address, null = out of range
+    const near = POI
+      .map(p => ({ p, d: metres(at, p) }))
+      .filter(x => x.d <= 60)
+      .sort((a, b) => a.d - b.d)
+      .slice(0, 4)
+    if (!near.length) return closeHits()
+
+    hits.innerHTML = `<div class="poilabel">${tr('addPlaceNearby')}</div>` +
+      near.map(({ p, d }, i) => `
+        <button type="button" class="poihit" role="option" data-near="${i}">
+          <span class="poiico">${TYPES[p.t]?.icon || '📍'}</span>
+          <span class="poitext"><span class="poiname">${html(p.n)}</span>
+            ${p.e ? `<span class="poien">${html(p.e)}</span>` : ''}</span>
+          <span class="poidist">${Math.round(d)}m</span>
+        </button>`).join('')
+    hits.hidden = false
+    hits.querySelectorAll('[data-near]').forEach(b => b.onclick = () => {
+      const { p } = near[Number(b.dataset.near)]
+      nameInput.value = p.n
+      if (TYPES[p.t]) selectCategory(p.t)
+      closeHits()
+    })
+  }
+  locationInput.addEventListener('input', suggestFromLocation)
+
   const priceMinInput = sheet.querySelector('#ap-price-min')
   const priceMaxInput = sheet.querySelector('#ap-price-max')
   const readPriceRange = () => {

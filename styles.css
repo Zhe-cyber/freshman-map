@@ -467,3 +467,8 @@ img.photo{display:block;margin:12px auto 0;width:auto;height:auto;
    rather than a choice you are being offered. */
 .poihit.have{background:#f2f7f4}
 .poihit.have .poien{color:#2f8ef4}
+
+/* Header above "which shop is this?" suggestions, so they are not mistaken
+   for name-search results. */
+.poilabel{font-size:10.5px;font-weight:800;color:var(--soft);letter-spacing:.04em;
+  padding:5px 9px 3px}

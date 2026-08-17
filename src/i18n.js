@@ -65,7 +65,7 @@ const messages = {
     dietVeg: '素食', dietVegan: '全素', dietNoPork: '無豬肉',
     paperYes: '有提供衛生紙', paperNo: '沒有衛生紙，請自備', paperUnknown: '衛生紙狀況未調查',
     paperNoneKnown: '附近還沒有已確認有衛生紙的廁所',
-    addPlace: '推薦地點', addPlaceName: '地點名稱', addPlaceSearchHint: '打店名就會自動找位置，找不到再自己填座標', addPlaceAlready: '地圖上已經有了 — 點一下去看', addPlaceFound: '已帶入正確位置 📍', addPlaceNote: '推薦什麼？',
+    addPlace: '推薦地點', addPlaceName: '地點名稱', addPlaceSearchHint: '打店名就會自動找位置，找不到再自己填座標', addPlaceAlready: '地圖上已經有了 — 點一下去看', addPlaceNearby: '這個位置附近的店，是哪一間？', addPlaceFound: '已帶入正確位置 📍', addPlaceNote: '推薦什麼？',
     addPlaceSave: '加到地圖', addPlaceDone: '謝謝推薦！已加到地圖 🎉', addPlaceNeedName: '請輸入地點名稱',
    
     englishOkay: '可以用英文點餐', orderEnglish: '英文', englishUnknown: '英文尚未回報',
@@ -167,7 +167,7 @@ const messages = {
     dietVeg: 'Vegetarian', dietVegan: 'Vegan', dietNoPork: 'No pork',
     paperYes: 'Toilet paper provided', paperNo: 'No paper — bring your own', paperUnknown: 'Paper not surveyed yet',
     paperNoneKnown: 'No confirmed paper-provided toilet nearby yet',
-    addPlace: 'Recommend a place', addPlaceName: 'Name', addPlaceSearchHint: 'Type the shop name and we will find it — or enter coordinates yourself', addPlaceAlready: 'Already on the map — tap to see it', addPlaceFound: 'Exact location filled in 📍', addPlaceNote: 'What is good here?',
+    addPlace: 'Recommend a place', addPlaceName: 'Name', addPlaceSearchHint: 'Type the shop name and we will find it — or enter coordinates yourself', addPlaceAlready: 'Already on the map — tap to see it', addPlaceNearby: 'Shops near this spot — which one?', addPlaceFound: 'Exact location filled in 📍', addPlaceNote: 'What is good here?',
     addPlaceSave: 'Add to map', addPlaceDone: 'Thanks! Added to the map 🎉', addPlaceNeedName: 'Please enter a name',
    
     englishOkay: 'English ordering available', orderEnglish: 'English', englishUnknown: 'English not reported',
@@ -268,7 +268,7 @@ const messages = {
     dietVeg: 'ベジタリアン', dietVegan: 'ヴィーガン', dietNoPork: '豚肉なし',
     paperYes: 'トイレットペーパーあり', paperNo: 'ペーパーなし・持参してください', paperUnknown: 'ペーパーの有無は未調査',
     paperNoneKnown: '近くに確認済みのトイレはまだありません',
-    addPlace: '場所を推薦', addPlaceName: '場所の名前', addPlaceSearchHint: '店名を入力すると場所を探します。無ければ座標を入力してください', addPlaceAlready: 'すでに地図にあります — タップで表示', addPlaceFound: '正確な位置を入力しました 📍', addPlaceNote: 'おすすめは？',
+    addPlace: '場所を推薦', addPlaceName: '場所の名前', addPlaceSearchHint: '店名を入力すると場所を探します。無ければ座標を入力してください', addPlaceAlready: 'すでに地図にあります — タップで表示', addPlaceNearby: 'この場所の近くの店 — どれですか？', addPlaceFound: '正確な位置を入力しました 📍', addPlaceNote: 'おすすめは？',
     addPlaceSave: '地図に追加', addPlaceDone: 'ありがとう！地図に追加しました 🎉', addPlaceNeedName: '場所の名前を入力してください',
    
     englishOkay: '英語で注文可能', orderEnglish: '英語', englishUnknown: '英語対応未報告',
