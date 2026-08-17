@@ -38,7 +38,7 @@ export const photoUrl = file => {
 }
 
 // Identity
-import { currentUser } from './auth.js'
+import { currentUser, idToken, isAdmin } from './auth.js'
 
 const ID_KEY = 'freshmanmap.user'
 
@@ -80,9 +80,13 @@ export const me = {
 // -----------------------------------------------------------------------------
 
 async function call(path, options = {}) {
+  // Send the token when we have one. Public routes ignore it; the admin routes
+  // carry a JWT authorizer at API Gateway and reject anything unsigned.
+  const token = idToken()
   const r = await fetch(`${API_BASE}/c/${campusId}${path}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {})
     },
     ...options
@@ -175,7 +179,10 @@ export async function createPlace(draft) {
   }
 
   if (!usingMock) {
-    return call('/places', {
+    // Admins post to the authorized route, which is the only one that can
+    // prove the group and therefore the only one allowed to mark a place
+    // verified. Everyone else's goes to the public route and waits for review.
+    return call(isAdmin() ? '/admin/places' : '/places', {
       method: 'POST',
       body: JSON.stringify(place)
     })
@@ -309,6 +316,24 @@ export async function publishProfile(card) {
   return call(`/users/${encodeURIComponent(user.userId)}`, {
     method: 'PUT', body: JSON.stringify(card)
   })
+}
+
+// --- admin ------------------------------------------------------------------
+// The server decides who is an admin from the verified token; these just fail
+// with 401/403 for everyone else.
+export const iAmAdmin = isAdmin
+
+export async function getPendingPlaces() {
+  if (usingMock) return []
+  return call('/admin/places')
+}
+
+export async function verifyPlace(placeId) {
+  return call(`/admin/places/${encodeURIComponent(placeId)}/verify`, { method: 'POST', body: '{}' })
+}
+
+export async function rejectPlace(placeId) {
+  return call(`/admin/places/${encodeURIComponent(placeId)}`, { method: 'DELETE' })
 }
 
 export async function getProfiles(userIds = []) {

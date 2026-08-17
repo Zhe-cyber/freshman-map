@@ -95,6 +95,10 @@ function addPlacePin(p) {
        <span class="plbl">${html(label)}</span>
      </div>`)
   el.onclick = e => { e.stopPropagation(); openPlace(p) }
+  // Student submissions show on the map straight away, marked rather than
+  // hidden — nothing anyone contributes is thrown away while it waits.
+  // Only an explicit false counts: surveyed places predate this field.
+  el.classList.toggle('unverified', p.verified === false)
   // Respect the current filter at creation time. Bike pins are added later, as
   // the viewport moves, and would otherwise appear regardless of the filter.
   el.classList.toggle('hide', !active.has(p.type))

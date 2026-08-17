@@ -53,6 +53,24 @@ export function currentUser() {
 
 export const isSignedIn = () => !!currentUser() && !currentUser().expired
 
+// The raw token, for the Authorization header. API Gateway verifies its
+// signature against Cognito before our Lambda ever sees the request.
+export function idToken() {
+  try { return JSON.parse(localStorage.getItem(KEY))?.idToken || null } catch { return null }
+}
+
+// Group membership comes from the token, so the UI and the server agree on who
+// is an admin. This only decides what to SHOW — the server checks the verified
+// token independently, and a user editing this in devtools gets a 403.
+export function isAdmin() {
+  const u = currentUser()
+  if (!u || u.expired) return false
+  try {
+    const g = decodeSegment(JSON.parse(localStorage.getItem(KEY)).idToken.split('.')[1])['cognito:groups']
+    return (Array.isArray(g) ? g : String(g || '').split(/[\s,]+/)).includes('admins')
+  } catch { return false }
+}
+
 // --- actions -------------------------------------------------------------
 
 export async function signUp(username, password, name) {

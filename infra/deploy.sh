@@ -273,7 +273,7 @@ if [ "$PREFLIGHT_GET" = "204" ] &&
 
 else
 
-  echo "  CORS            FAILS ? �X browser requests may be blocked"
+  echo "  CORS            FAILS ? �X browser requests may be blocked"
 
 fi
 
@@ -282,3 +282,67 @@ echo "  Next: set API_BASE in src/api.js to"
 echo "        $URL"
 echo
 echo "  Then: node infra/seed.js   (loads buildings, items and places)"
+# ---------------------------------------------------------------------------
+# JWT authorizer + admin routes
+# ---------------------------------------------------------------------------
+#
+# Only the admin routes carry the authorizer. Protecting $default would lock
+# out guest mode, which the app deliberately supports.
+#
+# Identity for everything else still comes from the request body — a known
+# limitation, documented rather than hidden. Admin is the one place where
+# trusting the body would make the whole feature meaningless, so that is where
+# the verification lives.
+
+echo "==> JWT authorizer"
+
+POOL_ID=$(aws cognito-idp list-user-pools --max-results 20 --region "$REGION" \
+  --query "UserPools[?Name=='freshmanmap-users'].Id | [0]" --output text 2>/dev/null || echo None)
+CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id "$POOL_ID" --region "$REGION" \
+  --query 'UserPoolClients[0].ClientId' --output text 2>/dev/null || echo None)
+
+if [ "$POOL_ID" != "None" ] && [ "$CLIENT_ID" != "None" ]; then
+  AUTH_ID=$(aws apigatewayv2 get-authorizers --api-id "$API_ID" --region "$REGION" \
+    --query "Items[?Name=='freshmanmap-jwt'].AuthorizerId | [0]" --output text)
+
+  if [ "$AUTH_ID" = "None" ] || [ -z "$AUTH_ID" ]; then
+    AUTH_ID=$(aws apigatewayv2 create-authorizer --api-id "$API_ID" --region "$REGION" \
+      --name freshmanmap-jwt --authorizer-type JWT \
+      --identity-source '$request.header.Authorization' \
+      --jwt-configuration "Audience=${CLIENT_ID},Issuer=https://cognito-idp.${REGION}.amazonaws.com/${POOL_ID}" \
+      --query AuthorizerId --output text)
+    echo "    created $AUTH_ID"
+  else
+    echo "    exists $AUTH_ID"
+  fi
+
+  INTEG=$(aws apigatewayv2 get-integrations --api-id "$API_ID" --region "$REGION" \
+    --query 'Items[0].IntegrationId' --output text)
+
+  for RK in "GET /c/{campus}/admin/places" \
+            "POST /c/{campus}/admin/places" \
+            "POST /c/{campus}/admin/places/{placeId}/verify" \
+            "DELETE /c/{campus}/admin/places/{placeId}"; do
+    EXISTS=$(aws apigatewayv2 get-routes --api-id "$API_ID" --region "$REGION" \
+      --query "Items[?RouteKey=='$RK'].RouteId | [0]" --output text)
+    if [ "$EXISTS" = "None" ] || [ -z "$EXISTS" ]; then
+      aws apigatewayv2 create-route --api-id "$API_ID" --region "$REGION" \
+        --route-key "$RK" --target "integrations/${INTEG}" \
+        --authorization-type JWT --authorizer-id "$AUTH_ID" >/dev/null
+      echo "    route + $RK"
+    fi
+  done
+
+  # Group membership is what the Lambda checks. Create it if missing; adding
+  # people to it is a deliberate act, not something a deploy should do.
+  aws cognito-idp create-group --group-name admins --user-pool-id "$POOL_ID" \
+    --region "$REGION" --description "Can add verified places and review submissions" \
+    >/dev/null 2>&1 || true
+  echo "    admins group ready"
+  echo
+  echo "  Make someone an admin with:"
+  echo "    aws cognito-idp admin-add-user-to-group --user-pool-id $POOL_ID \\"
+  echo "      --username <name> --group-name admins --region $REGION"
+else
+  echo "    skipped — run infra/deploy-auth.sh first"
+fi

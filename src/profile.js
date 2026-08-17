@@ -10,7 +10,10 @@
 // the original fills the quota with one upload. Uploading to S3 would need a
 // presigned-URL endpoint; that is the upgrade, not this.
 
-import { user, setUserName, getPlaces, getActivities, campusId, publishProfile } from './api.js'
+import {
+  user, setUserName, getPlaces, getActivities, campusId, publishProfile,
+  iAmAdmin, getPendingPlaces, verifyPlace, rejectPlace
+} from './api.js'
 import { toast } from './ui.js'
 import { t, onLanguageChange } from './i18n.js'
 
@@ -166,6 +169,12 @@ export async function render() {
       <div class="actions"><button class="btn go" id="pf-save">${t('profileSave')}</button></div>
     </div>
 
+    ${iAmAdmin() ? `<div class="card">
+      <div class="ctitle">🛡️ ${t('adminTitle')}</div>
+      <div class="hint">${t('adminSub')}</div>
+      <div id="pf-pending" class="pending">${t('adminLoading')}</div>
+    </div>` : ''}
+
     <button class="linkbtn quiet" id="pf-signout">${t('loginSignOut')}</button>
 
     <input type="file" id="pf-file" accept="image/*" hidden>`
@@ -173,6 +182,7 @@ export async function render() {
   root.querySelector('#pf-avatar-btn').onclick = () => root.querySelector('#pf-file').click()
   root.querySelector('#pf-file').onchange = e => pickAvatar(e.target.files[0])
   root.querySelector('#pf-save').onclick = save
+  if (iAmAdmin()) renderPending()
 }
 
 // The shareable subset, so people can see who is organising or joining an
@@ -213,6 +223,52 @@ async function save() {
 
 // A 4000x3000 phone photo is several MB; localStorage holds about 5 MB total.
 // Downscale to a square thumbnail before storing, or one upload fills the quota.
+// ---------------------------------------------------------------------------
+// Admin review
+//
+// Approving is a real permission, so the button is only half the story: the
+// server re-checks the verified token and returns 403 if this panel was made
+// visible by editing localStorage.
+// ---------------------------------------------------------------------------
+
+async function renderPending() {
+  const box = document.getElementById('pf-pending')
+  if (!box) return
+  let list = []
+  try {
+    list = await getPendingPlaces()
+  } catch (e) {
+    box.textContent = /403|401/.test(String(e.message)) ? t('adminDenied') : t('errGeneric')
+    return
+  }
+  if (!list.length) { box.innerHTML = `<div class="hint">${t('adminEmpty')}</div>`; return }
+
+  box.innerHTML = list.map(p => `
+    <div class="pend" data-id="${html(p.placeId)}">
+      <div class="pendmain">
+        <div class="pendname">${html(p.icon || '📍')} ${html(p.name || p.placeId)}</div>
+        <div class="pendsub">${html(p.note || p.address || '')}</div>
+      </div>
+      <button class="btn go small" data-ok="${html(p.placeId)}">${t('adminApprove')}</button>
+      <button class="linkbtn quiet small" data-no="${html(p.placeId)}">${t('adminReject')}</button>
+    </div>`).join('')
+
+  box.querySelectorAll('[data-ok]').forEach(b => b.onclick = () => act(verifyPlace, b.dataset.ok))
+  box.querySelectorAll('[data-no]').forEach(b => b.onclick = () => {
+    if (confirm(t('adminRejectConfirm'))) act(rejectPlace, b.dataset.no)
+  })
+}
+
+async function act(fn, placeId) {
+  try {
+    await fn(placeId)
+    toast(t('adminDone'))
+    await renderPending()
+  } catch (e) {
+    toast(/403|401/.test(String(e.message)) ? t('adminDenied') : t('errGeneric'))
+  }
+}
+
 // Centre-crop to a square of px, so a portrait photo is not squashed.
 function square(img, side, px) {
   const canvas = document.createElement('canvas')

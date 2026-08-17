@@ -86,8 +86,41 @@ function normaliseJoinedBy(value) {
 }
 
 // ---------------------------------------------------------------------------
-// Lambda
+// Who is calling
+//
+// Two sources, and the difference between them is the whole point:
+//
+//   claims  — filled in by API Gateway AFTER it verified the token's signature
+//             against Cognito's public keys. The caller cannot write here.
+//   body    — typed by the caller. Fine for "which user is this", useless as
+//             proof of anything.
+//
+// So userId falls back to the body (guest mode and unprotected routes still
+// work), but isAdmin is ONLY ever true from a verified token. An admin check
+// that trusts the request body is not a check.
 // ---------------------------------------------------------------------------
+
+function identity(event, body = {}) {
+  const claims = event.requestContext?.authorizer?.jwt?.claims || null
+
+  // cognito:groups arrives as a JSON-ish array or a space/comma separated
+  // string depending on the payload version — normalise both.
+  const raw = claims?.['cognito:groups']
+  const groups = Array.isArray(raw)
+    ? raw
+    : typeof raw === 'string'
+      ? raw.replace(/^\[|\]$/g, '').split(/[\s,]+/).filter(Boolean)
+      : []
+
+  return {
+    userId: claims?.sub
+      || body.userId
+      || event.queryStringParameters?.userId
+      || null,
+    verified: !!claims?.sub,
+    isAdmin: groups.includes('admins')
+  }
+}
 
 export const handler = async (event) => {
   const method = event.requestContext?.http?.method || 'GET'
@@ -128,6 +161,82 @@ export const handler = async (event) => {
       body = event.body ? JSON.parse(event.body) : {}
     } catch {
       return json(400, { error: 'invalid JSON body' })
+    }
+
+    const who = identity(event, body)
+
+    // -----------------------------------------------------------------------
+    // ADMIN — moderating places
+    //
+    // GET    /c/{campus}/admin/places              pending review
+    // POST   /c/{campus}/admin/places/{id}/verify  approve
+    // DELETE /c/{campus}/admin/places/{id}         reject
+    //
+    // These routes carry a JWT authorizer at API Gateway, so a request without
+    // a valid token never reaches this code. The check below is the second
+    // lock, for the case where someone attaches the route and forgets the
+    // authorizer — it fails closed.
+    // -----------------------------------------------------------------------
+
+    if (seg[2] === 'admin') {
+      if (!who.verified) return json(401, { error: 'sign in required' })
+      if (!who.isAdmin) return json(403, { error: 'admins only' })
+
+      if (method === 'GET' && seg[3] === 'places') {
+        // Explicitly false, not "missing". Everything seeded before this
+        // feature existed has no verified field, and those are curated data —
+        // treating absent as pending would put 39 surveyed places in the queue.
+        const all = await bySkPrefix(campusId, 'PLACE#')
+        return json(200, all.filter(p => p.verified === false))
+      }
+
+      // Admins add through here rather than the public POST /places, because
+      // only a route carrying the authorizer can prove the group. The public
+      // route stays open so guests can still contribute.
+      if (method === 'POST' && seg[3] === 'places' && !seg[4]) {
+        if (!body.name) return json(400, { error: 'name required' })
+        const place = {
+          ...body,
+          campusId,
+          placeId: body.placeId || 'adm-' + Date.now(),
+          addedBy: who.userId,
+          verified: true,
+          verifiedBy: who.userId,
+          createdAt: new Date().toISOString()
+        }
+        await db.send(new PutCommand({
+          TableName: TABLE,
+          Item: { pk: pk(campusId), sk: `PLACE#${place.placeId}`, ...place }
+        }))
+        return json(201, place)
+      }
+
+      if (method === 'POST' && seg[3] === 'places' && seg[4] && seg[5] === 'verify') {
+        const placeId = decodeURIComponent(seg[4])
+        const r = await db.send(new UpdateCommand({
+          TableName: TABLE,
+          Key: { pk: pk(campusId), sk: `PLACE#${placeId}` },
+          UpdateExpression: 'SET verified = :v, verifiedBy = :b, verifiedAt = :t',
+          ConditionExpression: 'attribute_exists(sk)',
+          ExpressionAttributeValues: {
+            ':v': true, ':b': who.userId, ':t': new Date().toISOString()
+          },
+          ReturnValues: 'ALL_NEW'
+        })).catch(() => null)
+        if (!r) return json(404, { error: 'no such place' })
+        const { pk: _p, sk: _s, ...place } = r.Attributes
+        return json(200, place)
+      }
+
+      if (method === 'DELETE' && seg[3] === 'places' && seg[4]) {
+        await db.send(new DeleteCommand({
+          TableName: TABLE,
+          Key: { pk: pk(campusId), sk: `PLACE#${decodeURIComponent(seg[4])}` }
+        }))
+        return json(200, { deleted: decodeURIComponent(seg[4]) })
+      }
+
+      return json(404, { error: 'not found' })
     }
 
     // -----------------------------------------------------------------------
@@ -212,10 +321,18 @@ export const handler = async (event) => {
         })
       }
 
+      // verified is decided here, never taken from the body — otherwise anyone
+      // could post {"verified":true} and skip review entirely.
+      //
+      // A place added by an admin is trusted immediately: that is the point of
+      // the role. Everyone else's shows on the map marked as unverified rather
+      // than being hidden, so nothing a student contributes is thrown away.
       const place = {
         ...body,
         campusId,
         placeId: body.placeId || 'user-' + Date.now(),
+        addedBy: who.userId,
+        verified: who.isAdmin === true,
         createdAt: new Date().toISOString()
       }
 
