@@ -211,8 +211,13 @@ function card(a) {
   const host = a.userId ? cards.get(a.userId)?.displayName || shortName(a.userId)
                         : a.hostName || '—'
 
-  const going = (a.joinedBy || []).slice(0, 8)
-  const spare = Math.max(0, Math.min(capacity, 8) - going.length)
+  const MAX_FACES = 8
+  const going = (a.joinedBy || []).slice(0, MAX_FACES)
+  // Empty circles are only honest when they can show every free place. At a
+  // capacity of 30 we can draw 7 of them, which reads as "8 spots" and
+  // contradicts the 1/30 printed directly above. Past eight, the counter
+  // carries it alone.
+  const spare = capacity <= MAX_FACES ? Math.max(0, capacity - going.length) : 0
 
   const who = `<div class="who">
       <div class="wholabel">${t('actWhoComing')} · ${joined}/${capacity}</div>

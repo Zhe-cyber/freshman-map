@@ -3,9 +3,10 @@ import { PAYMENT_METHODS, TYPES } from './data.js'
 import { POI } from './poi.js'
 import {
   campus, me, getBuildings, getPlaces, createPlace, loadItems, itemsIn, findItem,
-  getYouBikeStations, metres, floorOrder, navTo, watchMe, photoUrl
+  getYouBikeStations, metres, floorOrder, navTo, watchMe, photoUrl,
+  voteEnglish, myEnglishVote
 } from './api.js'
-import { openSheet, closeSheet, toast, scoreBar } from './ui.js'
+import { openSheet, closeSheet, toast } from './ui.js'
 import { markVisited } from './profile.js'
 import { localName, localPhrase, localText, onLanguageChange, sayMeaning, secondaryName, t as tr } from './i18n.js'
 
@@ -370,6 +371,30 @@ function paperBlock(paper) {
     : `<div class="fact no">🚫 ${tr('paperNo')}</div>`
 }
 
+// A question rather than a score. Nobody starts with a rating; it appears only
+// once someone who actually went there answers.
+function englishBlock(p) {
+  const yes = Number(p.yes) || 0
+  const no = Number(p.no) || 0
+  const total = yes + no
+  const mine = myEnglishVote(p.placeId)
+
+  const tally = total
+    ? `<div class="engtally">${tr('englishTally', {
+        yes, total, pct: Math.round(yes / total * 100)
+      })}</div>`
+    : `<div class="engtally none">${tr('englishNone')}</div>`
+
+  return `<div class="eng" data-eng="${html(p.placeId)}">
+    <div class="engq">${tr('englishAsk')}</div>
+    ${tally}
+    <div class="engbtns">
+      <button type="button" class="engbtn${mine === true ? ' picked' : ''}" data-vote="1">👍 ${tr('englishYes')}</button>
+      <button type="button" class="engbtn${mine === false ? ' picked' : ''}" data-vote="0">👎 ${tr('englishNo')}</button>
+    </div>
+  </div>`
+}
+
 function openPlace(p, move = true) {
   curB = null; curI = null; curP = p
   select(p.placeId)
@@ -377,11 +402,25 @@ function openPlace(p, move = true) {
   let body = ''
 
   if (p.type === 'food') {
+    // No rating bar. It was never a rating: createPlace() writes yes:1 on
+    // every new place, so a restaurant a student added showed "10 / 10 English
+    // ordering" that nobody had reported, and the seeded places carried made-up
+    // vote counts. Claiming English is spoken somewhere it is not is a bad
+    // thing to tell an international student who is already lost.
+    //
+    // Only show a section when it has content: an empty "tap to show this
+    // phrase" promises information we do not have.
     const payments = paymentMethodsOf(p)
-    body = scoreBar(tr('englishOkay'), p, '#ff8a3d') +
+    // Guard on the source field, not the localised output: in Japanese
+    // localPhrase() returns a "translation unavailable" placeholder, which is
+    // truthy, so checking the output would still draw an empty row.
+    const phrase = p.say ? localPhrase(p) : ''
+
+    body =
+      englishBlock(p) +
       (payments.length ? `<div class="tags payment-tags">${payments.map(method =>
         `<span class="tag t-payment">${html(tr(`payment.${method}`))}</span>`).join('')}</div>` : '') +
-      `<div class="say" data-say>💬 <div>${html(localPhrase(p))}<small>${html(sayMeaning(p))}</small></div></div>`
+      (phrase ? `<div class="say" data-say>💬 <div>${html(phrase)}<small>${html(sayMeaning(p))}</small></div></div>` : '')
   } else if (p.type === 'bike') {
     const pct = p.docks ? Math.min(100, Math.round(p.bikes / p.docks * 100)) : 0
     const updated = p.updatedAt ? p.updatedAt.replace(/^\d{4}-\d{2}-\d{2} /, '') : null
@@ -451,6 +490,25 @@ function wire(place) {
   // Tap the photo for the full-size original — the sheet caps it at 38vh.
   s.querySelector('[data-zoom]')?.addEventListener('click', e =>
     window.open(e.currentTarget.dataset.zoom, '_blank'))
+
+  const eng = s.querySelector('[data-eng]')
+  if (eng) eng.querySelectorAll('[data-vote]').forEach(b => b.onclick = async () => {
+    const ok = b.dataset.vote === '1'
+    eng.querySelectorAll('[data-vote]').forEach(x => { x.disabled = true })
+    try {
+      const updated = await voteEnglish(eng.dataset.eng, ok)
+      // Keep the in-memory copy in step so re-opening the sheet shows the new
+      // tally rather than the stale one it was rendered from.
+      const target = places.find(x => x.placeId === eng.dataset.eng)
+      if (target) { target.yes = updated.yes; target.no = updated.no }
+      toast(tr(updated.already ? 'englishAlready' : 'englishThanks'))
+      if (curP && curP.placeId === eng.dataset.eng) openPlace(target || curP, false)
+    } catch (err) {
+      console.error('english vote failed', err)
+      toast(tr('errGeneric'))
+      eng.querySelectorAll('[data-vote]').forEach(x => { x.disabled = false })
+    }
+  })
 }
 
 // --- recommend a place ----------------------------------------------------

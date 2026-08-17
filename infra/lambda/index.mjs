@@ -304,10 +304,64 @@ export const handler = async (event) => {
       method === 'GET' &&
       seg[2] === 'places'
     ) {
-      return json(
-        200,
-        await bySkPrefix(campusId, 'PLACE#')
-      )
+      // englishVoters never leaves the server: it names who voted, which is
+      // nobody's business, and it is a Set that would serialise to {} anyway.
+      const places = await bySkPrefix(campusId, 'PLACE#')
+      return json(200, places.map(({ englishVoters, ...p }) => p))
+    }
+
+    // -----------------------------------------------------------------------
+    // WAS ENGLISH OK HERE?
+    // POST /c/{campus}/places/{placeId}/english   { userId, ok: true|false }
+    //
+    // A real report from a real visit, replacing the fabricated yes:1 that
+    // every new place used to be born with.
+    //
+    // Two things this has to get right:
+    //   ADD, not read-modify-write — sixty people voting at once must not
+    //   overwrite each other, the same lesson the join endpoint taught.
+    //   One vote each — englishVoters is a String Set and the condition
+    //   rejects a second vote from the same person, so the tally cannot be
+    //   inflated by tapping repeatedly.
+    // -----------------------------------------------------------------------
+
+    if (method === 'POST' && seg[2] === 'places' && seg[3] && seg[4] === 'english') {
+      const placeId = decodeURIComponent(seg[3])
+      const voter = who.userId
+      if (!voter) return json(400, { error: 'userId required' })
+      if (typeof body.ok !== 'boolean') return json(400, { error: 'ok must be true or false' })
+
+      try {
+        const r = await db.send(new UpdateCommand({
+          TableName: TABLE,
+          Key: { pk: pk(campusId), sk: `PLACE#${placeId}` },
+          // "no" is a DynamoDB reserved keyword, so the field has to be
+          // aliased — inlining it returns 500 on every 👎 while 👍 works fine,
+          // which is a nicely misleading half-failure.
+          UpdateExpression: 'ADD #field :one, englishVoters :u',
+          ConditionExpression:
+            'attribute_exists(sk) AND (attribute_not_exists(englishVoters) OR NOT contains(englishVoters, :id))',
+          ExpressionAttributeNames: { '#field': body.ok ? 'yes' : 'no' },
+          ExpressionAttributeValues: {
+            ':one': 1, ':u': new Set([voter]), ':id': voter
+          },
+          ReturnValues: 'ALL_NEW'
+        }))
+        const { pk: _p, sk: _s, englishVoters, ...place } = r.Attributes
+        return json(200, { ...place, votedByMe: true })
+      } catch (e) {
+        if (e.name === 'ConditionalCheckFailedException') {
+          // Either they already voted or there is no such place. Read it back
+          // so the client can still show the current tally.
+          const cur = await db.send(new GetCommand({
+            TableName: TABLE, Key: { pk: pk(campusId), sk: `PLACE#${placeId}` }
+          }))
+          if (!cur.Item) return json(404, { error: 'no such place' })
+          const { pk: _p, sk: _s, englishVoters, ...place } = cur.Item
+          return json(200, { ...place, votedByMe: true, already: true })
+        }
+        throw e
+      }
     }
 
     // -----------------------------------------------------------------------

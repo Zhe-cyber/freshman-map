@@ -472,3 +472,18 @@ img.photo{display:block;margin:12px auto 0;width:auto;height:auto;
    for name-search results. */
 .poilabel{font-size:10.5px;font-weight:800;color:var(--soft);letter-spacing:.04em;
   padding:5px 9px 3px}
+
+/* "No reports yet" — stated plainly, not dressed up as a score. */
+.score .val.unknown{color:var(--soft);font-weight:700;font-size:12px}
+
+/* "Was English OK here?" — a question with two answers, not a score. */
+.eng{background:#f5faf7;border-radius:16px;padding:12px 13px;margin-top:12px}
+.engq{font-weight:800;font-size:13.5px}
+.engtally{margin-top:4px;font-size:12px;font-weight:700;color:#1f9d6b}
+.engtally.none{color:var(--soft);font-weight:600}
+.engbtns{display:flex;gap:8px;margin-top:10px}
+.engbtn{flex:1;border:1.5px solid #dbe6e0;background:var(--card);border-radius:12px;
+  padding:9px 10px;font:800 13px/1 inherit;color:var(--ink);cursor:pointer}
+.engbtn:active{transform:scale(.97)}
+.engbtn.picked{border-color:var(--ink);background:var(--ink);color:#fff}
+.engbtn:disabled{opacity:.55;cursor:default}

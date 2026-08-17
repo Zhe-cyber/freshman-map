@@ -182,7 +182,10 @@ export async function createPlace(draft) {
     diet: draft.diet?.length ? draft.diet : [],
     paymentMethods,
     cash: paymentMethods.includes('cash'),
-    yes: 1,
+    // A new place has no reports. It used to be born with yes:1, which made
+    // every student-added restaurant claim "10/10 English ordering" that
+    // nobody had given it.
+    yes: 0,
     no: 0,
     addedByUser: true
   }
@@ -205,6 +208,30 @@ export async function createPlace(draft) {
   const all = [...added(), place]
   localStorage.setItem(ADDED_KEY, JSON.stringify(all))
   return place
+}
+
+// --- "was English OK here?" --------------------------------------------------
+//
+// The server is the authority on one-vote-per-person; this remembers our own
+// so the buttons can show what we picked without the server having to hand out
+// the list of who voted for what.
+const VOTED_KEY = 'freshmanmap.english.' + campusId
+
+const votes = () => {
+  try { return JSON.parse(localStorage.getItem(VOTED_KEY)) || {} } catch { return {} }
+}
+
+export const myEnglishVote = placeId => votes()[placeId] ?? null
+
+export async function voteEnglish(placeId, ok) {
+  const all = votes()
+  all[placeId] = ok
+  localStorage.setItem(VOTED_KEY, JSON.stringify(all))
+  if (usingMock) return { yes: ok ? 1 : 0, no: ok ? 0 : 1 }
+  return call(`/places/${encodeURIComponent(placeId)}/english`, {
+    method: 'POST',
+    body: JSON.stringify({ userId: user.userId, ok })
+  })
 }
 
 // -----------------------------------------------------------------------------
