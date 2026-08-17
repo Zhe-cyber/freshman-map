@@ -39,6 +39,7 @@ const MAX_CAP = 50
 
 let activities = []
 let tick = null
+let outsideDismissWired = false
 // userId -> published profile card. Fetched once per render for everyone
 // visible, so opening a card is instant and does not hit the API per tap.
 const cards = new Map()
@@ -84,6 +85,7 @@ const clockTime = a => a.startAt
 export async function initBuddy() {
   const newButton = document.getElementById('newact')
   if (newButton) newButton.onclick = openCreate
+  wireOutsideDismiss()
 
   onLanguageChange(render)
   await load()
@@ -91,6 +93,22 @@ export async function initBuddy() {
   // One timer for the whole list: countdowns move, nothing re-fetches.
   clearInterval(tick)
   tick = setInterval(render, 30000)
+}
+
+function wireOutsideDismiss() {
+  if (outsideDismissWired) return
+  outsideDismissWired = true
+  document.addEventListener('pointerdown', event => {
+    const createBox = document.getElementById('bcreate')
+    if (createBox && !createBox.hidden && !createBox.contains(event.target) && !event.target.closest('#newact')) {
+      closeCreate()
+    }
+
+    const chatBox = document.getElementById('bchat')
+    if (chatBox && !chatBox.hidden && !chatBox.contains(event.target) && !event.target.closest('[data-chat]')) {
+      closeChat()
+    }
+  }, true)
 }
 
 async function load() {

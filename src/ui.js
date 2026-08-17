@@ -11,9 +11,21 @@ export function openSheet(html) {
 }
 
 export function closeSheet() {
-  sheet().classList.remove('open')
+  const s = sheet()
+  const wasOpen = s.classList.contains('open')
+  s.classList.remove('open')
   document.querySelectorAll('.pin.sel').forEach(n => n.classList.remove('sel'))
+  if (wasOpen) s.dispatchEvent(new CustomEvent('sheetclose'))
 }
+
+// Pointer-down runs before a button's click handler. That means tapping a new
+// card closes the old sheet first, then the card's own click opens its sheet;
+// a click that originally opens a sheet is not mistaken for an outside click.
+document.addEventListener('pointerdown', event => {
+  const s = sheet()
+  if (!s?.classList.contains('open') || s.contains(event.target)) return
+  closeSheet()
+}, true)
 
 let timer
 export function toast(msg) {

@@ -30,6 +30,11 @@ export async function initMap() {
   })
   map.on('click', () => { creatingPlace ? cancelCreate() : closeSheet() })
   document.getElementById('addpin').onclick = startCreate
+  document.getElementById('sheet').addEventListener('sheetclose', () => {
+    if (!creatingPlace) return
+    creatingPlace = false
+    document.getElementById('addpin').classList.remove('on')
+  })
   map.on('style.load', applyMapLanguage)
   map.on('load', applyMapLanguage)
 
