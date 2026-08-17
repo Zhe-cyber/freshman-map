@@ -7,7 +7,7 @@ const CUISINES = [
   'taiwanese', 'japanese', 'korean', 'nightMarket', 'thai',
   'malaysian', 'indonesian', 'vietnamese', 'vegetarian', 'dessert', 'other'
 ]
-const VENUE_KINDS = ['arcade', 'ktv', 'billiards', 'mall']
+const VENUE_KINDS = ['arcade', 'ktv', 'billiards', 'mall', 'other']
 const PRICE_MIN = 0
 const PRICE_MAX = 500
 
@@ -30,7 +30,11 @@ let currentVenue = 'all'
 const html = value => String(value ?? '').replace(/[&<>"']/g, character =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character])
 
-const cuisineOf = place => place.cuisine || cuisineById.get(place.placeId) || 'other'
+const cuisineOf = place => {
+  const cuisine = place.cuisine || cuisineById.get(place.placeId) || 'other'
+  return CUISINES.includes(cuisine) ? cuisine : 'other'
+}
+const venueOf = place => VENUE_KINDS.includes(place.venueKind) ? place.venueKind : 'other'
 const priceOf = place => Number.isFinite(place.priceEstimate)
   ? place.priceEstimate
   : priceById.get(place.placeId) || ({ 1: 100, 2: 200, 3: 350 }[place.price] || 200)
@@ -76,7 +80,7 @@ function renderFilters() {
   const filters = document.getElementById('fchips')
   if (currentView === 'food') {
     const available = new Set(places.filter(place => place.type === 'food').map(cuisineOf))
-    const cuisineChoices = CUISINES.filter(cuisine => available.has(cuisine))
+    const cuisineChoices = CUISINES.filter(cuisine => cuisine === 'other' || available.has(cuisine))
     filters.innerHTML = filterGroup(
       t('cuisineFilter'),
       [['all', t('filterAll')], ...cuisineChoices.map(cuisine => [cuisine, t(`cuisine.${cuisine}`)])],
@@ -194,7 +198,7 @@ function renderRestaurants() {
 function renderEntertainment() {
   const list = places
     .filter(place => place.type === 'entertainment')
-    .filter(place => currentVenue === 'all' || place.venueKind === currentVenue)
+    .filter(place => currentVenue === 'all' || venueOf(place) === currentVenue)
     .sort((a, b) => metres(me, a) - metres(me, b))
 
   const output = document.getElementById('flist')
@@ -211,7 +215,7 @@ function renderEntertainment() {
         <div class="place-main">
           <div class="fname">${html(localName(place))}</div>
           <div class="fsub">${html(secondaryName(place))}</div>
-          <div class="tags"><span class="tag t-entertainment">${html(t(`venue.${place.venueKind}`))}</span></div>
+          <div class="tags"><span class="tag t-entertainment">${html(t(`venue.${venueOf(place)}`))}</span></div>
         </div>
       </div>
       <div class="fmeta"><span>🚶 ${html(t('distanceMetres', { count: metres(me, place) }))}</span></div>
