@@ -11,8 +11,8 @@ import { localName, localPhrase, localText, onLanguageChange, sayMeaning, second
 let map, markers = {}, buildings = [], places = [], bikePlaces = [], fallbackBikes = []
 let allBikeStations = [], curB = null, curI = null, curP = null
 // Start with every category OFF. A map that opens covered in 60 pins is
-// noise; the user picks what they are looking for. buildChips() opens the
-// category menu on first load so the controls are not hidden behind a button.
+// noise; the user picks what they are looking for. The category menu also
+// starts collapsed so the user can open it when they need it.
 const active = new Set()
 const html = value => String(value ?? '').replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
@@ -209,12 +209,11 @@ let chipsBuiltOnce = false
 
 function buildChips() {
   const box = document.getElementById('chips')
-  // Nothing is shown until the user picks a category, so open the menu the
-  // first time — otherwise the app loads to an empty map and one unlabelled
-  // button, which reads as broken. Re-renders keep whatever the user chose.
+  // Start collapsed on a fresh page load. Re-renders (for example after a
+  // language change) keep the open/closed state the user chose.
   const wasOpen = chipsBuiltOnce
     ? box.querySelector('.category-toggle')?.getAttribute('aria-expanded') === 'true'
-    : true
+    : false
   chipsBuiltOnce = true
   box.innerHTML = `<button type="button" class="category-toggle" aria-expanded="${wasOpen}" aria-controls="category-options">
       <span aria-hidden="true">☰</span>

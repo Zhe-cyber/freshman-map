@@ -301,8 +301,9 @@ img.photo{display:block;margin:12px auto 0;width:auto;height:auto;
 .pin.draft:active .ptag{cursor:grabbing}
 
 /* Login gate — covers everything until there is a session. */
-.login{position:fixed;inset:0;z-index:40;background:#eef4f1;display:grid;
+.login{position:fixed;inset:0;z-index:100;background:#eef4f1;display:grid;
   place-items:center;padding:22px;overflow-y:auto}
+.login[hidden]{display:none}
 /* Last-ditch guard: an empty gate must never cover the app. If render() ever
    fails, the user sees the map rather than a blank pale screen. */
 .login:empty{display:none}
