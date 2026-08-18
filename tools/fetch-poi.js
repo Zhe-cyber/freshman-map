@@ -30,6 +30,11 @@ if (!here) {
 
 const RADIUS = 1200
 
+// Places intentionally hidden from the app, even if they remain in OSM.
+const EXCLUDED_NAMES = new Set([
+  '趙喜妹'
+])
+
 // Mapped onto the app's own categories, so a search result can drop a pin of
 // the right type instead of everything becoming "food".
 const KINDS = {
@@ -82,7 +87,7 @@ const rows = []
 for (const el of elements) {
   const t = el.tags || {}
   const name = t.name || t['name:zh'] || t['name:en']
-  if (!name) continue
+  if (!name || EXCLUDED_NAMES.has(name)) continue
 
   const lat = el.lat ?? el.center?.lat
   const lng = el.lon ?? el.center?.lon

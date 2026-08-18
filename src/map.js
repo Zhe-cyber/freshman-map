@@ -541,7 +541,7 @@ const parseCoordinates = value => {
 //
 // A person guessing a location on a map is routinely 30-50m out, which puts a
 // restaurant on the wrong side of the street. OSM already knows where these
-// are: 424 named places within 1.2km of campus, bundled in poi.js.
+// are: 423 named places within 1.2km of campus, bundled in poi.js.
 //
 // Substring match, not fuzzy. Names here are mostly Chinese, where every
 // character carries meaning and edit-distance scoring produces nonsense —
@@ -626,9 +626,6 @@ function openCreateForm() {
 
     <div class="field"><label for="ap-note">${tr('addPlaceNote')}</label>
       <input id="ap-note" type="text" maxlength="80" autocomplete="off"></div>
-
-    <div class="field" data-food-field><label for="ap-say">${tr('addPlaceSay')}</label>
-      <input id="ap-say" type="text" maxlength="80" autocomplete="off" placeholder="一碗牛肉麵，不要香菜"></div>
 
     <div class="field"><label for="ap-location">${tr('addPlaceLocation')} *</label>
       <input id="ap-location" type="text" maxlength="160" autocomplete="street-address"
@@ -830,7 +827,6 @@ function openCreateForm() {
       paymentMethods: type === 'food' ? [...sheet.querySelectorAll('#ap-payment [data-on="1"]')].map(b => b.dataset.payment) : [],
       diet: type === 'food' ? [...sheet.querySelectorAll('#ap-diet [data-on="1"]')].map(b => b.dataset.diet) : [],
       note: sheet.querySelector('#ap-note').value.trim(),
-      say: type === 'food' ? sheet.querySelector('#ap-say').value.trim() : '',
       address: coordinates ? '' : location,
       navigationTarget: location,
       lat: pos.lat, lng: pos.lng
