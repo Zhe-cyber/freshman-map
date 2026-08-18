@@ -63,6 +63,30 @@ const deviceUser = (() => {
 const signedIn = currentUser()
 export const user = signedIn?.userId ? signedIn : deviceUser
 
+// Local data belongs to a person, not to a browser.
+//
+// The profile, the votes and the locally-added places were keyed by campus
+// alone, so signing in as someone else on a shared laptop showed you THEIR
+// name, photo, department and bio — and pressing Save would have republished
+// their details under your own id.
+//
+// Wipe device-scoped data when the previous owner was a signed-in account and
+// the person here now is somebody else. Guest -> signed-in is deliberately
+// kept: that is one person creating an account, not a handover.
+;(() => {
+  const OWNER = 'freshmanmap.owner.' + campusId
+  const isGuest = id => !id || String(id).startsWith('u-')
+  try {
+    const previous = localStorage.getItem(OWNER)
+    if (previous && previous !== user.userId && !isGuest(previous)) {
+      for (const k of ['freshmanmap.profile.', 'freshmanmap.english.', 'freshmanmap.added.']) {
+        localStorage.removeItem(k + campusId)
+      }
+    }
+    localStorage.setItem(OWNER, user.userId)
+  } catch { /* private browsing with storage disabled — nothing to protect */ }
+})()
+
 export function setUserName(name) {
   deviceUser.name = name.trim()
   localStorage.setItem(ID_KEY, JSON.stringify(deviceUser))

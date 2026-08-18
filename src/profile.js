@@ -12,7 +12,7 @@
 
 import {
   user, setUserName, getPlaces, getActivities, campusId, publishProfile,
-  iAmAdmin, getPendingPlaces, verifyPlace, rejectPlace
+  iAmAdmin, getPendingPlaces, verifyPlace, rejectPlace, getProfiles
 } from './api.js'
 import { toast } from './ui.js'
 import { t, onLanguageChange } from './i18n.js'
@@ -105,7 +105,23 @@ const BADGES = [
 
 export async function initProfile() {
   onLanguageChange(render)
+  await hydrate()
   await render()
+}
+
+// Sign in on a machine you have never used before and your profile is empty,
+// because it lives in that browser's storage. The shareable half is on the
+// server though, so pull it back rather than making someone retype it.
+// Only when there is nothing local — never overwrite what is already here.
+async function hydrate() {
+  if (Object.keys(loadProfile()).length) return
+  try {
+    const [card] = await getProfiles([user.userId])
+    if (!card) return
+    const { userId, updatedAt, ...mine } = card
+    saveProfile(mine)
+    if (mine.displayName) setUserName(mine.displayName)
+  } catch { /* offline, or nothing published yet */ }
 }
 
 export async function render() {
